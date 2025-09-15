@@ -4,7 +4,7 @@ from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
-from schemas import GroupSchema, UserIdSchema
+from schemas import GroupSchema, GroupCreateSchema, UserIdInputSchema
 
 from db import db
 
@@ -16,11 +16,13 @@ blp = Blueprint("Group", __name__, description="Operations on group")
 class GroupList(MethodView):
     @blp.response(200, GroupSchema(many=True))
     def get(self):
+        """Get all groups"""
         return GroupModel.query.all()
 
-    @blp.arguments(GroupSchema)
+    @blp.arguments(GroupCreateSchema)
     @blp.response(201, GroupSchema)
     def post(self, group_data):
+        """Create Group"""
         group = GroupModel(**group_data)
         try:
             db.session.add(group)
@@ -29,7 +31,7 @@ class GroupList(MethodView):
             abort(400, message="A group with that name already exists.")
 
         except SQLAlchemyError:
-            abort(500, messgae="An error occured while creating group.")
+            abort(500, message="An error occured while creating group.")
         
         return group
 
@@ -39,12 +41,12 @@ class Group(MethodView):
 
     @blp.response(200, GroupSchema)
     def get(self, group_id):
-        try:
-            return GroupModel.query.get_or_404(group_id)
-        except KeyError:
-            abort(404, message="group not found.")
+        """Get group by id"""
+        return GroupModel.query.get_or_404(group_id)
+
 
     def delete(self, group_id):
+        """Delete group by id"""
         group = GroupModel.query.get_or_404(group_id)
         db.session.delete(group)
         db.session.commit()
@@ -55,9 +57,10 @@ class Group(MethodView):
 @blp.route("/group/<int:group_id>/user")
 class UserToGroup(MethodView):
 
-    @blp.arguments(UserIdSchema)
+    @blp.arguments(UserIdInputSchema)
     def post(self, user_data, group_id):
-        user_id = user_data.get("user_id")
+        """Add a user to a group"""
+        user_id = user_data.get("user_id") 
         group = GroupModel.query.get(group_id)
         if not group:
             abort(404, message="Group not found")
@@ -75,11 +78,13 @@ class UserToGroup(MethodView):
         except SQLAlchemyError:
             abort(500, message="An error occurred while adding user to group.")
 
-        return {"message":f"{UserModel.query.get(user_id).username} is added to {GroupModel.query.get(group_id).name}"}
+        return {"message": f"{UserModel.query.get(user_id).username} is added to {group.name}"}, 201
+
 
 @blp.route("/group/<int:group_id>/user/<int:user_id>")
 class RemoveUserFromGroup(MethodView):
     def delete(self, group_id, user_id):
+        """Remove user from group"""
         group_user = GroupUserModel.query.filter_by(group_id=group_id, user_id=user_id).first()
         if not group_user:
             abort(404, message="User not found in group")
