@@ -10,3 +10,6 @@ class ExpenseModel(db.Model):
     paid_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), nullable=False)
     date = db.Column(db.Date, nullable=True)
+
+    groups = db.relationship("GroupModel", back_populates="expenses")
+    payer = db.relationship("UserModel", back_populates="expenses_paid")

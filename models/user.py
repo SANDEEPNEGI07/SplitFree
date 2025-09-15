@@ -9,3 +9,4 @@ class UserModel(db.Model):
     password = db.Column(db.String(256), nullable=False)
 
     groups = db.relationship("GroupModel", back_populates="users", secondary="group_user")
+    expenses_paid = db.relationship("ExpenseModel", back_populates="payer", lazy="dynamic")

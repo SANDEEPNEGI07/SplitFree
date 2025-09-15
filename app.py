@@ -9,6 +9,7 @@ from db import db
 
 from resources.group import blp as GroupBlueprint
 from resources.user import blp as UserBlueprint
+from resources.expense import blp as ExpenseBlueprint
 
 
 def create_app(db_url = None):
@@ -45,5 +46,6 @@ def create_app(db_url = None):
 
     api.register_blueprint(GroupBlueprint)
     api.register_blueprint(UserBlueprint)
+    api.register_blueprint(ExpenseBlueprint)
 
     return app

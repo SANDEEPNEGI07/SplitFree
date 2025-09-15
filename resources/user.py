@@ -15,6 +15,7 @@ blp = Blueprint("User", __name__, description="Opeartion on users")
 class UserRegister(MethodView):
     @blp.arguments(UserSchema)
     def post(self, user_data):
+        """Register user"""
         if UserModel.query.filter(UserModel.username == user_data["username"]).first():
             abort(409, message = f"User already exists")
 
@@ -33,10 +34,12 @@ class User(MethodView):
     
     @blp.response(200, UserSchema)
     def get(self, user_id):
+        """Get user details"""
         user = UserModel.query.get_or_404(user_id)
         return user
     
     def delete(self, user_id):
+        """Delete the user"""
         user = UserModel.query.get_or_404(user_id)
         db.session.delete(user)
         db.session.commit()
