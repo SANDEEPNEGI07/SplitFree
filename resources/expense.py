@@ -4,7 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from schemas import ExpenseSchema, ExpenseCreateSchema
 from db import db
-from models import ExpenseModel, GroupModel
+from models import ExpenseModel, GroupModel, ExpenseSplitModel
 
 blp = Blueprint("Expense", __name__, description="Operations on expenses")
 
@@ -17,6 +17,10 @@ class GroupExpense(MethodView):
         """Create a new expense in a group"""
 
         group = GroupModel.query.get_or_404(group_id)
+        users = group.users
+
+        if not users:
+            abort(400, message="No users in this group to split expense.")
 
         existing_expense = ExpenseModel.query.filter_by(
             description=expense_data["description"],
@@ -33,17 +37,31 @@ class GroupExpense(MethodView):
 
         try:
             db.session.add(expense)
+            db.session.flush()
+
+            share = expense.amount / len(users)
+
+            for user in users:
+                split = ExpenseSplitModel(
+                    expense_id = expense.id,
+                    user_id = user.id,
+                    amount = share
+                )
+                db.session.add(split)
+
             db.session.commit()
         
         except IntegrityError:
+            db.session.rollback()
             return {"message":"Expense already created"}
 
         except SQLAlchemyError:
+            db.session.rollback()
             return {"message":"An error occured while creating expense"}
 
         return expense
     
-    @blp.response(201, ExpenseSchema(many=True))
+    @blp.response(200, ExpenseSchema(many=True))
     def get(self, group_id):
         """Get all expenses in a group"""
         group = GroupModel.query.get_or_404(group_id)
@@ -59,9 +77,9 @@ class ExpenseDetail(MethodView):
         db.session.delete(expense)
         db.session.commit()
 
-        return {"message":"Expense deleted successfully"}
+        return {"message":"Expense deleted successfully"}, 200
 
-    @blp.response(201, ExpenseSchema)
+    @blp.response(200, ExpenseSchema)
     def get(self,group_id, expense_id):
         """Get a single expense from a group"""
         return ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()

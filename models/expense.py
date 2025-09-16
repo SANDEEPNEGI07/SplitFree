@@ -13,3 +13,9 @@ class ExpenseModel(db.Model):
 
     groups = db.relationship("GroupModel", back_populates="expenses")
     payer = db.relationship("UserModel", back_populates="expenses_paid")
+    splits = db.relationship(
+        "ExpenseSplitModel",
+        back_populates="expenses",
+        cascade="all, delete, delete-orphan",
+        order_by="ExpenseSplitModel.id"
+    )

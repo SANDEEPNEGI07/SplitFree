@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields
+from datetime import datetime as dt
 
 # User related Schema
 class UserSchema(Schema):
@@ -28,12 +29,32 @@ class GroupSchema(GroupCreateSchema):
     users = fields.List(fields.Nested(UserIdSchema), dump_only=True)
 
 # Expense realted Schema
+class ExpenseSplitSchema(Schema):
+    id = fields.Method("get_index", dump_only=True)
+    split_id = fields.Int(attribute="id", dump_only=True)
+    user_id = fields.Int(required=True)
+    amount = fields.Float(dump_only=True)
+
+    def get_index(self, obj):
+        try:
+            parent = getattr(obj, "expenses", None)
+            if parent and parent.splits:
+                return parent.splits.index(obj) + 1
+        except Exception:
+            pass
+        return None
+
 class ExpenseCreateSchema(Schema):
     amount = fields.Float(required=True)
     description = fields.Str(required=True)
     paid_by = fields.Int(required=True)
-    date = fields.Date(required=False)
+    date = fields.Date(load_default=lambda: dt.now().date())
 
 class ExpenseSchema(ExpenseCreateSchema):
     id = fields.Int(dump_only=True)
     group_id = fields.Int(required=True)
+    splits = fields.List(fields.Nested(ExpenseSplitSchema), dump_only=True)
+
+    class Meta:
+        ordered = True
+        fields = ("id", "amount", "description", "paid_by", "date", "group_id", "splits")

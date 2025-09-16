@@ -51,7 +51,7 @@ class Group(MethodView):
         db.session.delete(group)
         db.session.commit()
 
-        return {"message":"Group deleted"}
+        return {"message":"Group deleted"}, 200
     
 
 @blp.route("/group/<int:group_id>/user")
