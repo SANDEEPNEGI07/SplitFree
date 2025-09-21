@@ -16,28 +16,7 @@ class GroupSettlement(MethodView):
     @blp.arguments(SettlementCreateSchema)
     @blp.response(201, SettlementSchema)
     def post(self, settlement_data, group_id):
-        """
-        Create a settlement between two users in a group.
-        
-        Records a payment from one group member to another to settle debts.
-        Both users must be members of the group and amount must be positive.
-        Users cannot settle with themselves.
-        
-        Args:
-            settlement_data: JSON with amount, paid_by, and paid_to user IDs
-            group_id: ID of the group where settlement occurs
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            201: Created settlement object
-            400: Error if users are same or amount is not positive
-            403: Error if users are not group members
-            404: Error if group not found
-            401: Error if token is invalid
-            500: Error if database operation fails
-        """
+        """Create a settlement between two group members."""
         group = GroupModel.query.get_or_404(group_id)
 
         paid_by = settlement_data["paid_by"]
@@ -72,23 +51,7 @@ class GroupSettlement(MethodView):
     @jwt_required()
     @blp.response(200, SettlementSchema(many=True))
     def get(self, group_id):
-        """
-        Get all settlements in a group.
-        
-        Retrieves all payment settlements that have been recorded between
-        group members to settle shared expenses.
-        
-        Args:
-            group_id: ID of the group to get settlements for
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Array of settlement objects
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Get all settlements in a group."""
         GroupModel.query.get_or_404(group_id)
         return SettlementModel.query.filter_by(group_id=group_id).all()
 
@@ -99,24 +62,7 @@ class GroupBalances(MethodView):
     @jwt_required()
     @blp.response(200, BalanceSchema(many=True))
     def get(self, group_id):
-        """
-        Calculate and get current balances for all group members.
-        
-        Computes net balances based on expenses and settlements.
-        Positive balance means others owe money to this user.
-        Negative balance means this user owes money to others.
-        
-        Args:
-            group_id: ID of the group to calculate balances for
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Array of balance objects with user_id, username, and balance
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Calculate current balances for all group members."""
         group = GroupModel.query.get_or_404(group_id)
         members = group.users
         if not members:
@@ -139,11 +85,7 @@ class GroupBalances(MethodView):
 
 
 def _compute_balances(group_id: int):
-    """
-    Returns dict: user_id -> net balance
-    Positive => others owe this user.
-    Negative => this user owes others.
-    """
+    """Calculate net balances for group members based on expenses and settlements."""
     group = GroupModel.query.get_or_404(group_id)
     member_ids = {u.id for u in group.users}
     balances = {uid: 0.0 for uid in member_ids}
@@ -178,24 +120,7 @@ class SettlementCleanup(MethodView):
 
     @jwt_required()
     def delete(self, group_id):
-        """
-        Clean up invalid settlements in a group.
-        
-        Removes settlements where one or both users are no longer members
-        of the group. This helps clean up orphaned settlements that become
-        invalid when users are removed from groups.
-        
-        Args:
-            group_id: ID of the group to clean up settlements for
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Success message with count of cleaned settlements
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Clean up settlements where users are no longer group members."""
         group = GroupModel.query.get_or_404(group_id)
         member_ids = {u.id for u in group.users}
         

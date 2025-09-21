@@ -16,27 +16,7 @@ class GroupExpense(MethodView):
     @blp.arguments(ExpenseCreateSchema)
     @blp.response(201, ExpenseSchema)
     def post(self, expense_data, group_id):
-        """
-        Create a new expense in a group.
-        
-        Records an expense paid by one group member that should be split
-        among all group members equally. Automatically creates expense
-        splits for each group member.
-        
-        Args:
-            expense_data: JSON with amount, description, paid_by, and optional date
-            group_id: ID of the group where expense occurred
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            201: Created expense object with splits
-            400: Error if no users in group, payer not in group, or expense exists
-            404: Error if group not found
-            401: Error if token is invalid
-            500: Error if database operation fails
-        """
+        """Create a new expense in a group and split it equally among all members."""
 
         group = GroupModel.query.get_or_404(group_id)
         users = group.users
@@ -92,23 +72,7 @@ class GroupExpense(MethodView):
     @jwt_required()
     @blp.response(200, ExpenseSchema(many=True))
     def get(self, group_id):
-        """
-        Get all expenses in a group.
-        
-        Retrieves all expenses recorded for a specific group including
-        expense details and how each expense was split among members.
-        
-        Args:
-            group_id: ID of the group to get expenses for
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Array of expense objects with splits
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Get all expenses in a specific group."""
         group = GroupModel.query.get_or_404(group_id)
         return ExpenseModel.query.filter_by(group_id=group_id).all()
     
@@ -117,26 +81,7 @@ class ExpenseDetail(MethodView):
 
     @jwt_required()
     def delete(self, group_id, expense_id):
-        """
-        Delete a specific expense from a group.
-        
-        Permanently removes an expense and all associated splits.
-        This affects group balances and may invalidate existing settlements.
-        Consider recalculating balances after deletion to ensure settlements
-        are still appropriate.
-        
-        Args:
-            group_id: ID of the group containing the expense
-            expense_id: ID of the expense to delete
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Success message confirming deletion with balance impact warning
-            404: Error if expense not found in group
-            401: Error if token is invalid
-        """
+        """Delete an expense and warn if settlements may be affected."""
         from models import SettlementModel
         
         expense = ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
@@ -158,22 +103,5 @@ class ExpenseDetail(MethodView):
     @jwt_required()
     @blp.response(200, ExpenseSchema)
     def get(self,group_id, expense_id):
-        """
-        Get details of a specific expense.
-        
-        Retrieves detailed information about a single expense including
-        how it was split among group members.
-        
-        Args:
-            group_id: ID of the group containing the expense
-            expense_id: ID of the expense to retrieve
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Expense object with splits
-            404: Error if expense not found in group
-            401: Error if token is invalid
-        """
+        """Get details of a specific expense by ID."""
         return ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()

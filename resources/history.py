@@ -14,27 +14,7 @@ class GroupHistory(MethodView):
     @jwt_required()
     @blp.response(200, ExpenseHistoryResponseSchema)
     def get(self, group_id):
-        """
-        Get complete expense and settlement history for a group.
-        
-        Returns a chronological history of all financial activities in the group
-        including expenses (with split details) and settlements between members.
-        For expenses, shows what each member owed, paid, and still owes.
-        
-        Args:
-            group_id: ID of the group to get history for
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: History object with group_id and items array containing:
-                 - Expense items: id, type="expense", description, amount, date, 
-                   paid_by, splits (with owed/paid/remaining per user)
-                 - Settlement items: id, type="settlement", amount, paid_by, paid_to
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Get complete expense and settlement history for a group."""
         GroupModel.query.get_or_404(group_id)
 
         # Load expenses with splits to compute owed/paid/remaining

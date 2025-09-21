@@ -19,52 +19,41 @@ class GroupList(MethodView):
     @jwt_required()
     @blp.response(200, GroupSchema(many=True))
     def get(self):
-        """
-        Get all groups in the system.
-        
-        Retrieves a list of all available groups with their details
-        including group members.
-        
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Array of group objects with id, name, description, and users
-            401: Error if token is invalid
-        """
+        """Get all groups in the system."""
         return GroupModel.query.all()
 
     @jwt_required()
     @blp.arguments(GroupCreateSchema)
     @blp.response(201, GroupSchema)
     def post(self, group_data):
-        """
-        Create a new group.
+        """Create a new group and automatically add the creator as first member."""
+        from flask_jwt_extended import get_jwt_identity
         
-        Creates a new group with name and description. Group starts empty
-        and users can be added separately using the add user endpoint.
+        # Get the current logged-in user ID
+        current_user_id = int(get_jwt_identity())
         
-        Args:
-            group_data: JSON containing name and description
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            201: Created group object
-            400: Error if group name already exists
-            401: Error if token is invalid
-            500: Error if database operation fails
-        """
+        # Verify the user exists
+        current_user = UserModel.query.get(current_user_id)
+        if not current_user:
+            abort(404, message="Current user not found")
+        
         group = GroupModel(**group_data)
         try:
             db.session.add(group)
+            db.session.flush()  # Flush to get the group ID
+            
+            # Automatically add the creator to the group
+            group_user = GroupUserModel(group_id=group.id, user_id=current_user_id)
+            db.session.add(group_user)
+            
             db.session.commit()
         except IntegrityError:
+            db.session.rollback()
             abort(400, message="A group with that name already exists.")
 
         except SQLAlchemyError:
-            abort(500, message="An error occured while creating group.")
+            db.session.rollback()
+            abort(500, message="An error occurred while creating group.")
         
         return group
 
@@ -75,47 +64,12 @@ class Group(MethodView):
     @jwt_required()
     @blp.response(200, GroupSchema)
     def get(self, group_id):
-        """
-        Get group details by ID.
-        
-        Retrieves detailed information about a specific group including
-        all members currently in the group.
-        
-        Args:
-            group_id: Unique identifier of the group
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Group object with id, name, description, and users array
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Get group details by ID including all members."""
         return GroupModel.query.get_or_404(group_id)
 
     @jwt_required()
     def delete(self, group_id):
-        """
-        Delete group permanently.
-        
-        Removes the group and all associated data. Group cannot be deleted
-        if it has any financial activity (expenses or settlements) as this
-        would result in data loss. All financial obligations must be
-        settled and cleared before group deletion.
-        
-        Args:
-            group_id: Unique identifier of the group to delete
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Success message confirming deletion
-            400: Error if group has financial activity preventing deletion
-            404: Error if group not found
-            401: Error if token is invalid
-        """
+        """Delete group permanently. Cannot delete if group has expenses or settlements."""
         group = GroupModel.query.get_or_404(group_id)
         
         # Check for constraints that prevent deletion
@@ -147,26 +101,7 @@ class UserToGroup(MethodView):
     @jwt_required()
     @blp.arguments(UserIdInputSchema)
     def post(self, user_data, group_id):
-        """
-        Add a user to a group.
-        
-        Adds an existing user to a group by their user ID. User must exist
-        in the system and cannot already be a member of the group.
-        
-        Args:
-            user_data: JSON containing user_id to add
-            group_id: ID of the group to add user to
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            201: Success message with username and group name
-            400: Error if user already in group
-            404: Error if user or group not found
-            401: Error if token is invalid
-            500: Error if database operation fails
-        """
+        """Add a user to a group by user ID."""
         user_id = user_data.get("user_id") 
         
         # Validate user exists
@@ -199,27 +134,7 @@ class RemoveUserFromGroup(MethodView):
 
     @jwt_required()
     def delete(self, group_id, user_id):
-        """
-        Remove a user from a group.
-        
-        Removes a user's membership from a group. Validates that removing
-        this user won't leave any invalid settlements. If the user is
-        involved in unsettled expenses or active settlements, they cannot
-        be removed until those are resolved.
-        
-        Args:
-            group_id: ID of the group to remove user from
-            user_id: ID of the user to remove
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Success message confirming removal
-            400: Error if user has unresolved financial obligations
-            404: Error if user not found in group
-            401: Error if token is invalid
-        """
+        """Remove a user from a group. Prevents removal if user has financial obligations."""
         from models import SettlementModel, ExpenseModel, ExpenseSplitModel
         
         group_user = GroupUserModel.query.filter_by(group_id=group_id, user_id=user_id).first()

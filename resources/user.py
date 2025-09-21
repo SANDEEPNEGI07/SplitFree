@@ -20,19 +20,7 @@ blp = Blueprint("User", __name__, description="Opeartion on users")
 class UserRegister(MethodView):
     @blp.arguments(UserSchema)
     def post(self, user_data):
-        """
-        Register a new user in the system.
-        
-        Creates a new user account with a hashed password. Only email must be unique.
-        Multiple users can have the same username.
-        
-        Args:
-            user_data: JSON containing username, email, and password
-            
-        Returns:
-            201: Success message with user created confirmation
-            409: Error if email already exists
-        """
+        """Register a new user with unique email."""
         # Check if email already exists (usernames can be duplicate)
         if UserModel.query.filter(UserModel.email == user_data["email"]).first():
             abort(409, message="Email already exists")
@@ -51,20 +39,7 @@ class UserRegister(MethodView):
 class UserLogin(MethodView):
     @blp.arguments(UserLoginSchema)
     def post(self, user_data):
-        """
-        Authenticate user and provide access tokens.
-        
-        Validates user credentials using email (unique identifier) and returns JWT 
-        access and refresh tokens for authenticated API access. Access token is marked as fresh.
-        Only email is accepted for login since usernames can be duplicate.
-        
-        Args:
-            user_data: JSON containing email and password
-            
-        Returns:
-            200: Access token and refresh token on successful login
-            401: Error if credentials are invalid
-        """
+        """Login with email and password to get access tokens."""
         email = user_data["email"]
         password = user_data["password"]
         
@@ -108,19 +83,7 @@ class UserLogout(MethodView):
    
    @jwt_required()
    def post(self):
-        """
-        Logout user and invalidate access token.
-        
-        Adds the current access token to the blocklist to prevent further use.
-        User will need to login again to get new tokens.
-        
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Success message confirming logout
-            401: Error if token is invalid or missing
-        """
+        """Logout user and add token to blocklist."""
         jti = get_jwt()["jti"]
         BLOCKLIST.add(jti)
 
@@ -132,48 +95,13 @@ class User(MethodView):
     @jwt_required()
     @blp.response(200, UserSchema)
     def get(self, user_id):
-        """
-        Get user details by ID.
-        
-        Retrieves user information including ID and username.
-        Password is never returned for security.
-        
-        Args:
-            user_id: Unique identifier of the user
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: User object with id and username
-            404: Error if user not found
-            401: Error if token is invalid
-        """
+        """Get user details by ID."""
         user = UserModel.query.get_or_404(user_id)
         return user
     
     @jwt_required()
     def delete(self, user_id):
-        """
-        Delete user account permanently.
-        
-        Removes user from the system including all associated data.
-        This action cannot be undone. User cannot be deleted if they
-        have any financial obligations (paid expenses or outstanding splits)
-        or are members of groups.
-        
-        Args:
-            user_id: Unique identifier of the user to delete
-            
-        Requires:
-            Valid access token in Authorization header
-            
-        Returns:
-            200: Success message confirming deletion
-            400: Error if user has obligations that prevent deletion
-            404: Error if user not found
-            401: Error if token is invalid
-        """
+        """Delete user permanently. Cannot delete if user has financial obligations."""
         user = UserModel.query.get_or_404(user_id)
         
         # Check various constraints that prevent deletion
