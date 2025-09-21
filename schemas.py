@@ -4,7 +4,7 @@ from datetime import datetime as dt
 # User related Schema
 class UserSchema(Schema):
     """User must have these details"""
-    id = fields.Str(dump_only=True)
+    id = fields.Int(dump_only=True)
     username = fields.Str(required=True)
     password = fields.Str(required=True, load_only=True)
 
@@ -30,7 +30,7 @@ class GroupCreateSchema(Schema):
 
 class GroupSchema(GroupCreateSchema):
     """This Group Schema will add the users to the Group"""
-    id = fields.Str(dump_only=True)
+    id = fields.Int(dump_only=True)
     users = fields.List(fields.Nested(UserIdSchema), dump_only=True)
 
     class Meta:

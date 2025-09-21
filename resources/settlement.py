@@ -1,6 +1,7 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 from sqlalchemy.exc import SQLAlchemyError
+from flask_jwt_extended import jwt_required, get_jwt
 
 from db import db
 from models import SettlementModel, GroupModel, UserModel, ExpenseSplitModel, ExpenseModel
@@ -11,10 +12,32 @@ blp = Blueprint("Settlement", __name__, description="Operations on settlements")
 @blp.route("/group/<int:group_id>/settlement")
 class GroupSettlement(MethodView):
 
+    @jwt_required
     @blp.arguments(SettlementCreateSchema)
     @blp.response(201, SettlementSchema)
     def post(self, settlement_data, group_id):
-        """Create a settlement between two users in a group"""
+        """
+        Create a settlement between two users in a group.
+        
+        Records a payment from one group member to another to settle debts.
+        Both users must be members of the group and amount must be positive.
+        Users cannot settle with themselves.
+        
+        Args:
+            settlement_data: JSON with amount, paid_by, and paid_to user IDs
+            group_id: ID of the group where settlement occurs
+            
+        Requires:
+            Valid access token in Authorization header
+            
+        Returns:
+            201: Created settlement object
+            400: Error if users are same or amount is not positive
+            403: Error if users are not group members
+            404: Error if group not found
+            401: Error if token is invalid
+            500: Error if database operation fails
+        """
         group = GroupModel.query.get_or_404(group_id)
 
         paid_by = settlement_data["paid_by"]
@@ -46,17 +69,54 @@ class GroupSettlement(MethodView):
 
         return settlement
 
+    @jwt_required
     @blp.response(200, SettlementSchema(many=True))
     def get(self, group_id):
-        """Get all settlements in a group"""
+        """
+        Get all settlements in a group.
+        
+        Retrieves all payment settlements that have been recorded between
+        group members to settle shared expenses.
+        
+        Args:
+            group_id: ID of the group to get settlements for
+            
+        Requires:
+            Valid access token in Authorization header
+            
+        Returns:
+            200: Array of settlement objects
+            404: Error if group not found
+            401: Error if token is invalid
+        """
         GroupModel.query.get_or_404(group_id)
         return SettlementModel.query.filter_by(group_id=group_id).all()
 
 
 @blp.route("/group/<int:group_id>/balances")
 class GroupBalances(MethodView):
+
+    @jwt_required
     @blp.response(200, BalanceSchema(many=True))
     def get(self, group_id):
+        """
+        Calculate and get current balances for all group members.
+        
+        Computes net balances based on expenses and settlements.
+        Positive balance means others owe money to this user.
+        Negative balance means this user owes money to others.
+        
+        Args:
+            group_id: ID of the group to calculate balances for
+            
+        Requires:
+            Valid access token in Authorization header
+            
+        Returns:
+            200: Array of balance objects with user_id, username, and balance
+            404: Error if group not found
+            401: Error if token is invalid
+        """
         group = GroupModel.query.get_or_404(group_id)
         members = group.users
         if not members:
