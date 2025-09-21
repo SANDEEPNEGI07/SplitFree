@@ -13,3 +13,8 @@ class GroupModel(db.Model):
         back_populates="groups",
         cascade="all, delete" ,
         lazy="dynamic")
+    settlements = db.relationship(
+        "SettlementModel",
+        back_populates="group",
+        cascade="all, delete",
+        lazy="dynamic")

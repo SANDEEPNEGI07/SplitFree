@@ -6,17 +6,24 @@ class UserSchema(Schema):
     """User must have these details"""
     id = fields.Int(dump_only=True)
     username = fields.Str(required=True)
+    email = fields.Email(required=True)
     password = fields.Str(required=True, load_only=True)
 
     class Meta:
         ordered = True
-        # password is load_only; on dump you'll see id, username in this order
-        fields = ("id", "username", "password")
+        # password is load_only; on dump you'll see id, username, email in this order
+        fields = ("id", "username", "email", "password")
+
+class UserLoginSchema(Schema):
+    """Schema for user login - requires email for authentication"""
+    email = fields.Email(required=True)
+    password = fields.Str(required=True)
 
 class UserIdSchema(Schema):
     """This Schema give output to the client"""
     id = fields.Int(dump_only=True)
     username = fields.Str()
+    email = fields.Email()
 
 class UserIdInputSchema(Schema):
     """This Schema takes input from the client"""

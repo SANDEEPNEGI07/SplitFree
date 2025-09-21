@@ -11,7 +11,7 @@ blp = Blueprint("History", __name__, description="Expense and settlement history
 @blp.route("/group/<int:group_id>/history")
 class GroupHistory(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.response(200, ExpenseHistoryResponseSchema)
     def get(self, group_id):
         """

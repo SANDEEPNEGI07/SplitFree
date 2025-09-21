@@ -12,7 +12,7 @@ blp = Blueprint("Expense", __name__, description="Operations on expenses")
 @blp.route("/group/<int:group_id>/expense")
 class GroupExpense(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.arguments(ExpenseCreateSchema)
     @blp.response(201, ExpenseSchema)
     def post(self, expense_data, group_id):
@@ -89,7 +89,7 @@ class GroupExpense(MethodView):
 
         return expense
     
-    @jwt_required
+    @jwt_required()
     @blp.response(200, ExpenseSchema(many=True))
     def get(self, group_id):
         """
@@ -115,13 +115,15 @@ class GroupExpense(MethodView):
 @blp.route("/group/<int:group_id>/expense/<int:expense_id>")
 class ExpenseDetail(MethodView):
 
-    @jwt_required
+    @jwt_required()
     def delete(self, group_id, expense_id):
         """
         Delete a specific expense from a group.
         
         Permanently removes an expense and all associated splits.
-        This affects group balances and cannot be undone.
+        This affects group balances and may invalidate existing settlements.
+        Consider recalculating balances after deletion to ensure settlements
+        are still appropriate.
         
         Args:
             group_id: ID of the group containing the expense
@@ -131,18 +133,29 @@ class ExpenseDetail(MethodView):
             Valid access token in Authorization header
             
         Returns:
-            200: Success message confirming deletion
+            200: Success message confirming deletion with balance impact warning
             404: Error if expense not found in group
             401: Error if token is invalid
         """
+        from models import SettlementModel
+        
         expense = ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
-
+        
+        # Check if there are any settlements in this group
+        settlements_count = SettlementModel.query.filter_by(group_id=group_id).count()
+        
+        # Delete the expense (cascades to expense splits automatically)
         db.session.delete(expense)
         db.session.commit()
+        
+        # Provide warning if settlements exist that may now be incorrect
+        message = "Expense deleted successfully"
+        if settlements_count > 0:
+            message += f". Warning: {settlements_count} settlement(s) exist in this group. Consider recalculating balances to ensure settlements are still appropriate."
+        
+        return {"message": message}, 200
 
-        return {"message":"Expense deleted successfully"}, 200
-
-    @jwt_required
+    @jwt_required()
     @blp.response(200, ExpenseSchema)
     def get(self,group_id, expense_id):
         """

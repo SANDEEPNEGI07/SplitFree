@@ -13,4 +13,4 @@ class SettlementModel(db.Model):
     # Relationships
     payer = db.relationship("UserModel", foreign_keys=[paid_by])
     receiver = db.relationship("UserModel", foreign_keys=[paid_to])
-    group = db.relationship("GroupModel")
+    group = db.relationship("GroupModel", back_populates="settlements")

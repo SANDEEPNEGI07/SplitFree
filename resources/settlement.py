@@ -12,7 +12,7 @@ blp = Blueprint("Settlement", __name__, description="Operations on settlements")
 @blp.route("/group/<int:group_id>/settlement")
 class GroupSettlement(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.arguments(SettlementCreateSchema)
     @blp.response(201, SettlementSchema)
     def post(self, settlement_data, group_id):
@@ -69,7 +69,7 @@ class GroupSettlement(MethodView):
 
         return settlement
 
-    @jwt_required
+    @jwt_required()
     @blp.response(200, SettlementSchema(many=True))
     def get(self, group_id):
         """
@@ -96,7 +96,7 @@ class GroupSettlement(MethodView):
 @blp.route("/group/<int:group_id>/balances")
 class GroupBalances(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.response(200, BalanceSchema(many=True))
     def get(self, group_id):
         """
@@ -171,3 +171,49 @@ def _compute_balances(group_id: int):
         balances[s.paid_to] = balances.get(s.paid_to, 0.0) - float(s.amount)
 
     return balances
+
+
+@blp.route("/group/<int:group_id>/settlement/cleanup")
+class SettlementCleanup(MethodView):
+
+    @jwt_required()
+    def delete(self, group_id):
+        """
+        Clean up invalid settlements in a group.
+        
+        Removes settlements where one or both users are no longer members
+        of the group. This helps clean up orphaned settlements that become
+        invalid when users are removed from groups.
+        
+        Args:
+            group_id: ID of the group to clean up settlements for
+            
+        Requires:
+            Valid access token in Authorization header
+            
+        Returns:
+            200: Success message with count of cleaned settlements
+            404: Error if group not found
+            401: Error if token is invalid
+        """
+        group = GroupModel.query.get_or_404(group_id)
+        member_ids = {u.id for u in group.users}
+        
+        # Find settlements with users not in the group
+        invalid_settlements = []
+        settlements = SettlementModel.query.filter_by(group_id=group_id).all()
+        
+        for settlement in settlements:
+            if settlement.paid_by not in member_ids or settlement.paid_to not in member_ids:
+                invalid_settlements.append(settlement)
+        
+        # Delete invalid settlements
+        for settlement in invalid_settlements:
+            db.session.delete(settlement)
+        
+        db.session.commit()
+        
+        return {
+            "message": f"Cleaned up {len(invalid_settlements)} invalid settlement(s)",
+            "cleaned_count": len(invalid_settlements)
+        }, 200

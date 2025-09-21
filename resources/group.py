@@ -16,7 +16,7 @@ blp = Blueprint("Group", __name__, description="Operations on group")
 @blp.route("/group")
 class GroupList(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.response(200, GroupSchema(many=True))
     def get(self):
         """
@@ -34,7 +34,7 @@ class GroupList(MethodView):
         """
         return GroupModel.query.all()
 
-    @jwt_required
+    @jwt_required()
     @blp.arguments(GroupCreateSchema)
     @blp.response(201, GroupSchema)
     def post(self, group_data):
@@ -72,7 +72,7 @@ class GroupList(MethodView):
 @blp.route("/group/<int:group_id>")
 class Group(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.response(200, GroupSchema)
     def get(self, group_id):
         """
@@ -94,13 +94,15 @@ class Group(MethodView):
         """
         return GroupModel.query.get_or_404(group_id)
 
-    @jwt_required
+    @jwt_required()
     def delete(self, group_id):
         """
         Delete group permanently.
         
-        Removes the group and all associated data including expenses,
-        settlements, and member relationships. This action cannot be undone.
+        Removes the group and all associated data. Group cannot be deleted
+        if it has any financial activity (expenses or settlements) as this
+        would result in data loss. All financial obligations must be
+        settled and cleared before group deletion.
         
         Args:
             group_id: Unique identifier of the group to delete
@@ -110,20 +112,39 @@ class Group(MethodView):
             
         Returns:
             200: Success message confirming deletion
+            400: Error if group has financial activity preventing deletion
             404: Error if group not found
             401: Error if token is invalid
         """
         group = GroupModel.query.get_or_404(group_id)
+        
+        # Check for constraints that prevent deletion
+        constraints = []
+        
+        # Check if group has any expenses
+        expenses_count = group.expenses.count()
+        if expenses_count > 0:
+            constraints.append(f"has {expenses_count} expense(s)")
+        
+        # Check if group has any settlements
+        settlements_count = group.settlements.count()
+        if settlements_count > 0:
+            constraints.append(f"has {settlements_count} settlement(s)")
+        
+        if constraints:
+            constraint_text = ", ".join(constraints)
+            abort(400, message=f"Cannot delete group. Group {constraint_text}. Please clear all financial activity first.")
+        
         db.session.delete(group)
         db.session.commit()
 
-        return {"message":"Group deleted"}, 200
+        return {"message":"Group deleted successfully"}, 200
     
 
 @blp.route("/group/<int:group_id>/user")
 class UserToGroup(MethodView):
 
-    @jwt_required
+    @jwt_required()
     @blp.arguments(UserIdInputSchema)
     def post(self, user_data, group_id):
         """
@@ -176,14 +197,15 @@ class UserToGroup(MethodView):
 @blp.route("/group/<int:group_id>/user/<int:user_id>")
 class RemoveUserFromGroup(MethodView):
 
-    @jwt_required
+    @jwt_required()
     def delete(self, group_id, user_id):
         """
         Remove a user from a group.
         
-        Removes a user's membership from a group. This does not delete
-        the user's historical data (expenses, settlements) but prevents
-        them from participating in new group activities.
+        Removes a user's membership from a group. Validates that removing
+        this user won't leave any invalid settlements. If the user is
+        involved in unsettled expenses or active settlements, they cannot
+        be removed until those are resolved.
         
         Args:
             group_id: ID of the group to remove user from
@@ -194,14 +216,45 @@ class RemoveUserFromGroup(MethodView):
             
         Returns:
             200: Success message confirming removal
+            400: Error if user has unresolved financial obligations
             404: Error if user not found in group
             401: Error if token is invalid
         """
+        from models import SettlementModel, ExpenseModel, ExpenseSplitModel
+        
         group_user = GroupUserModel.query.filter_by(group_id=group_id, user_id=user_id).first()
         if not group_user:
             abort(404, message="User not found in group")
+        
+        # Check for financial constraints that prevent removal
+        constraints = []
+        
+        # Check if user has paid for any expenses in this group
+        paid_expenses = ExpenseModel.query.filter_by(group_id=group_id, paid_by=user_id).count()
+        if paid_expenses > 0:
+            constraints.append(f"has paid for {paid_expenses} expense(s) in this group")
+        
+        # Check if user has any expense splits in this group
+        user_splits = (ExpenseSplitModel.query
+                      .join(ExpenseModel)
+                      .filter(ExpenseModel.group_id == group_id, ExpenseSplitModel.user_id == user_id)
+                      .count())
+        if user_splits > 0:
+            constraints.append(f"has {user_splits} expense split(s) in this group")
+        
+        # Check if user is involved in any settlements in this group
+        settlements_as_payer = SettlementModel.query.filter_by(group_id=group_id, paid_by=user_id).count()
+        settlements_as_receiver = SettlementModel.query.filter_by(group_id=group_id, paid_to=user_id).count()
+        total_settlements = settlements_as_payer + settlements_as_receiver
+        if total_settlements > 0:
+            constraints.append(f"is involved in {total_settlements} settlement(s) in this group")
+        
+        if constraints:
+            constraint_text = ", ".join(constraints)
+            abort(400, message=f"Cannot remove user from group. User {constraint_text}. Please resolve these obligations first.")
+        
         db.session.delete(group_user)
         db.session.commit()
-        return {"message": "User removed from group"}, 200
+        return {"message": "User removed from group successfully"}, 200
 
 

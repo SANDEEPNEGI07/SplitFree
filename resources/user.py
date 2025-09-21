@@ -9,7 +9,7 @@ from blocklist import BLOCKLIST
 from sqlalchemy import or_
 
 
-from schemas import UserSchema
+from schemas import UserSchema, UserLoginSchema
 from db import db
 
 from models import UserModel
@@ -23,22 +23,24 @@ class UserRegister(MethodView):
         """
         Register a new user in the system.
         
-        Creates a new user account with a hashed password. Username must be unique.
-        Returns success message on successful registration.
+        Creates a new user account with a hashed password. Only email must be unique.
+        Multiple users can have the same username.
         
         Args:
-            user_data: JSON containing username and password
+            user_data: JSON containing username, email, and password
             
         Returns:
             201: Success message with user created confirmation
-            409: Error if username already exists
+            409: Error if email already exists
         """
-        if UserModel.query.filter(UserModel.username == user_data["username"]).first():
-            abort(409, message = f"User already exists")
+        # Check if email already exists (usernames can be duplicate)
+        if UserModel.query.filter(UserModel.email == user_data["email"]).first():
+            abort(409, message="Email already exists")
 
         user = UserModel(
-            username = user_data["username"],
-            password = pbkdf2_sha256.hash(user_data["password"])
+            username=user_data["username"],
+            email=user_data["email"],
+            password=pbkdf2_sha256.hash(user_data["password"])
         )
         db.session.add(user)
         db.session.commit()
@@ -47,26 +49,29 @@ class UserRegister(MethodView):
 
 @blp.route("/login")
 class UserLogin(MethodView):
-    @blp.arguments(UserSchema)
+    @blp.arguments(UserLoginSchema)
     def post(self, user_data):
         """
         Authenticate user and provide access tokens.
         
-        Validates user credentials and returns JWT access and refresh tokens
-        for authenticated API access. Access token is marked as fresh.
+        Validates user credentials using email (unique identifier) and returns JWT 
+        access and refresh tokens for authenticated API access. Access token is marked as fresh.
+        Only email is accepted for login since usernames can be duplicate.
         
         Args:
-            user_data: JSON containing username and password
+            user_data: JSON containing email and password
             
         Returns:
             200: Access token and refresh token on successful login
             401: Error if credentials are invalid
         """
-        user = UserModel.query.filter(
-            UserModel.username == user_data["username"]
-        ).first()
+        email = user_data["email"]
+        password = user_data["password"]
+        
+        # Find user by email (unique identifier)
+        user = UserModel.query.filter(UserModel.email == email).first()
 
-        if user and pbkdf2_sha256.verify(user_data["password"], user.password):
+        if user and pbkdf2_sha256.verify(password, user.password):
             access_token = create_access_token(identity=str(user.id), fresh=True)
             refresh_token = create_refresh_token(identity=str(user.id))
             return {"access_token": access_token, "refresh_token": refresh_token}
@@ -153,7 +158,9 @@ class User(MethodView):
         Delete user account permanently.
         
         Removes user from the system including all associated data.
-        This action cannot be undone.
+        This action cannot be undone. User cannot be deleted if they
+        have any financial obligations (paid expenses or outstanding splits)
+        or are members of groups.
         
         Args:
             user_id: Unique identifier of the user to delete
@@ -163,11 +170,35 @@ class User(MethodView):
             
         Returns:
             200: Success message confirming deletion
+            400: Error if user has obligations that prevent deletion
             404: Error if user not found
             401: Error if token is invalid
         """
         user = UserModel.query.get_or_404(user_id)
+        
+        # Check various constraints that prevent deletion
+        constraints = []
+        
+        # Check if user has paid for any expenses
+        expenses_count = user.expenses_paid.count()
+        if expenses_count > 0:
+            constraints.append(f"has paid for {expenses_count} expense(s)")
+        
+        # Check if user has any expense splits (owes money)
+        splits_count = len(user.splits)
+        if splits_count > 0:
+            constraints.append(f"has {splits_count} outstanding expense split(s)")
+        
+        # Check if user is member of any groups
+        groups_count = len(user.groups)
+        if groups_count > 0:
+            constraints.append(f"is a member of {groups_count} group(s)")
+        
+        if constraints:
+            constraint_text = ", ".join(constraints)
+            abort(400, message=f"Cannot delete user. User {constraint_text}. Please resolve these obligations first.")
+        
         db.session.delete(user)
         db.session.commit()
 
-        return {"message":"User deleted."}, 200
+        return {"message":"User deleted successfully."}, 200
