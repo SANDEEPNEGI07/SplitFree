@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from schemas import ExpenseSchema, ExpenseCreateSchema
 from db import db
-from models import ExpenseModel, GroupModel, ExpenseSplitModel
+from models import ExpenseModel, GroupModel, ExpenseSplitModel, SettlementModel
 
 blp = Blueprint("Expense", __name__, description="Operations on expenses")
 
@@ -82,7 +82,6 @@ class ExpenseDetail(MethodView):
     @jwt_required()
     def delete(self, group_id, expense_id):
         """Delete an expense and warn if settlements may be affected."""
-        from models import SettlementModel
         
         expense = ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
         
