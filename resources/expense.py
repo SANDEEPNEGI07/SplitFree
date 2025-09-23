@@ -16,7 +16,21 @@ class GroupExpense(MethodView):
     @blp.arguments(ExpenseCreateSchema)
     @blp.response(201, ExpenseSchema)
     def post(self, expense_data, group_id):
-        """Create a new expense in a group and split it equally among all members."""
+        """Create a new expense in a group and split it equally among all members - only if user is a member."""
+        from flask_jwt_extended import get_jwt_identity
+        from models import GroupUserModel
+        
+        # Get the current logged-in user ID
+        current_user_id = int(get_jwt_identity())
+        
+        # Check if the user is a member of this group
+        group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=current_user_id
+        ).first()
+        
+        if not group_user:
+            abort(403, message="Access denied. You are not a member of this group.")
 
         group = GroupModel.query.get_or_404(group_id)
         users = group.users
@@ -72,16 +86,69 @@ class GroupExpense(MethodView):
     @jwt_required()
     @blp.response(200, ExpenseSchema(many=True))
     def get(self, group_id):
-        """Get all expenses in a specific group."""
+        """Get all expenses in a specific group - only if user is a member."""
+        from flask_jwt_extended import get_jwt_identity
+        from models import GroupUserModel
+        
+        # Get the current logged-in user ID
+        current_user_id_raw = get_jwt_identity()
+        print(f"DEBUG: Raw JWT identity: {current_user_id_raw} (type: {type(current_user_id_raw)})")
+        
+        try:
+            current_user_id = int(current_user_id_raw)
+            print(f"DEBUG: Converted user ID: {current_user_id}")
+        except (ValueError, TypeError) as e:
+            print(f"DEBUG: Error converting user ID: {e}")
+            abort(400, message="Invalid user ID in token")
+        
+        print(f"DEBUG: User {current_user_id} trying to access expenses for group {group_id}")
+        
+        # Check if the user is a member of this group
+        group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=current_user_id
+        ).first()
+        
+        print(f"DEBUG: Group membership found: {group_user}")
+        if group_user:
+            print(f"DEBUG: User {current_user_id} IS a member of group {group_id}")
+        else:
+            print(f"DEBUG: User {current_user_id} is NOT a member of group {group_id}")
+            # Let's check all group memberships for this user
+            all_memberships = GroupUserModel.query.filter_by(user_id=current_user_id).all()
+            print(f"DEBUG: User {current_user_id} is member of groups: {[m.group_id for m in all_memberships]}")
+            # Let's also check all members of this group
+            all_group_members = GroupUserModel.query.filter_by(group_id=group_id).all()
+            print(f"DEBUG: Group {group_id} has members: {[m.user_id for m in all_group_members]}")
+        
+        if not group_user:
+            abort(403, message="Access denied. You are not a member of this group.")
+        
         group = GroupModel.query.get_or_404(group_id)
-        return ExpenseModel.query.filter_by(group_id=group_id).all()
+        expenses = ExpenseModel.query.filter_by(group_id=group_id).all()
+        print(f"DEBUG: Found {len(expenses)} expenses in group {group_id}")
+        return expenses
     
 @blp.route("/group/<int:group_id>/expense/<int:expense_id>")
 class ExpenseDetail(MethodView):
 
     @jwt_required()
     def delete(self, group_id, expense_id):
-        """Delete an expense and warn if settlements may be affected."""
+        """Delete an expense and warn if settlements may be affected - only if user is a member."""
+        from flask_jwt_extended import get_jwt_identity
+        from models import GroupUserModel
+        
+        # Get the current logged-in user ID
+        current_user_id = int(get_jwt_identity())
+        
+        # Check if the user is a member of this group
+        group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=current_user_id
+        ).first()
+        
+        if not group_user:
+            abort(403, message="Access denied. You are not a member of this group.")
         
         expense = ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
         
@@ -102,5 +169,20 @@ class ExpenseDetail(MethodView):
     @jwt_required()
     @blp.response(200, ExpenseSchema)
     def get(self,group_id, expense_id):
-        """Get details of a specific expense by ID."""
+        """Get details of a specific expense by ID - only if user is a member."""
+        from flask_jwt_extended import get_jwt_identity
+        from models import GroupUserModel
+        
+        # Get the current logged-in user ID
+        current_user_id = int(get_jwt_identity())
+        
+        # Check if the user is a member of this group
+        group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=current_user_id
+        ).first()
+        
+        if not group_user:
+            abort(403, message="Access denied. You are not a member of this group.")
+        
         return ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
