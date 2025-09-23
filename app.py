@@ -6,27 +6,7 @@ from flask import Flask, request, jsonify
 from flask_smorest import abort, Api
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
-
-from db import db
-from blocklist import BLOCKLIST
-
-from resources.group import blp as GroupBlueprint
-from resources.user import blp as UserBlueprint
-from resources.expense import blp as ExpenseBlueprint
-from resources.settlement import blp as SettlementBlueprint
-from resources.history import blp as HistoryBlueprint
-
-
-import os
-import sqlite3
-from dotenv import load_dotenv
-
-from flask import Flask, request, jsonify
-from flask_smorest import abort, Api
-from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate
+from flask_cors import CORS
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
@@ -68,6 +48,9 @@ def create_app(db_url = None):
 
     db.init_app(app)
     migrate = Migrate(app, db)
+    
+    # Enable CORS for frontend communication
+    CORS(app)
 
     # Enable foreign key constraints for SQLite
     @event.listens_for(Engine, "connect")
