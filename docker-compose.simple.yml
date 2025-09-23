@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Backend Flask API
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: splitwise-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    networks:
+      - splitwise-network
+
+  # Frontend React App
+  frontend:
+    build: ./frontend
+    container_name: splitwise-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - splitwise-network
+
+networks:
+  splitwise-network:
+    driver: bridge
