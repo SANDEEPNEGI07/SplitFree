@@ -23,6 +23,15 @@ const GroupDetails = () => {
     paid_by: ''
   });
 
+  // Debug logging for modal state changes
+  useEffect(() => {
+    console.log('showAddExpenseModal changed to:', showAddExpenseModal);
+  }, [showAddExpenseModal]);
+
+  useEffect(() => {
+    console.log('showAddMemberModal changed to:', showAddMemberModal);
+  }, [showAddMemberModal]);
+
   const currentGroup = groups.find(g => g.id === parseInt(groupId));
 
   useEffect(() => {
@@ -45,28 +54,51 @@ const GroupDetails = () => {
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
+    
+    console.log('Creating expense with data:', {
+      groupId,
+      expenseForm,
+      currentGroup
+    });
+    
     try {
-      await createExpense(groupId, {
+      const expenseData = {
         ...expenseForm,
         amount: parseFloat(expenseForm.amount),
         paid_by: parseInt(expenseForm.paid_by)
-      });
+      };
+      
+      console.log('Sending expense data to API:', expenseData);
+      
+      const result = await createExpense(groupId, expenseData);
+      console.log('Expense creation result:', result);
+      
       setShowAddExpenseModal(false);
       setExpenseForm({ amount: '', description: '', paid_by: '' });
       loadGroupData(); // Refresh expenses
+      
+      alert('Expense created successfully!');
     } catch (error) {
       console.error('Error creating expense:', error);
+      console.error('Error response:', error.response?.data);
       alert('Error creating expense: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const handleAddMember = async (user) => {
+    console.log('Adding member:', user, 'to group:', groupId);
+    
     try {
-      await addUserToGroup(groupId, user.id);
+      const result = await addUserToGroup(groupId, user.id);
+      console.log('Add member result:', result);
+      
       setShowAddMemberModal(false);
       refetch(); // Refresh group data to get updated members
+      
+      alert(`${user.username} added to group successfully!`);
     } catch (error) {
       console.error('Error adding member:', error);
+      console.error('Error response:', error.response?.data);
       alert('Error adding member: ' + (error.response?.data?.message || error.message));
     }
   };
@@ -146,12 +178,18 @@ const GroupDetails = () => {
         </div>
         <div className="header-actions">
           <Button 
-            onClick={() => setShowAddMemberModal(true)}
+            onClick={() => {
+              console.log('Add Member button clicked!');
+              setShowAddMemberModal(true);
+            }}
             variant="secondary"
           >
             Add Member
           </Button>
-          <Button onClick={() => setShowAddExpenseModal(true)}>
+          <Button onClick={() => {
+            console.log('Add Expense button clicked!');
+            setShowAddExpenseModal(true);
+          }}>
             Add Expense
           </Button>
         </div>
@@ -257,9 +295,13 @@ const GroupDetails = () => {
       {/* Add Expense Modal */}
       <Modal 
         isOpen={showAddExpenseModal} 
-        onClose={() => setShowAddExpenseModal(false)}
+        onClose={() => {
+          console.log('Closing Add Expense Modal');
+          setShowAddExpenseModal(false);
+        }}
         title="Add New Expense"
       >
+        {console.log('Rendering Add Expense Modal, isOpen:', showAddExpenseModal)}
         <form onSubmit={handleAddExpense} className="modal-form">
           <div className="form-group">
             <label>Description</label>
@@ -313,9 +355,13 @@ const GroupDetails = () => {
       {/* Add Member Modal */}
       <Modal 
         isOpen={showAddMemberModal} 
-        onClose={() => setShowAddMemberModal(false)}
+        onClose={() => {
+          console.log('Closing Add Member Modal');
+          setShowAddMemberModal(false);
+        }}
         title="Add Member to Group"
       >
+        {console.log('Rendering Add Member Modal, isOpen:', showAddMemberModal)}
         <UserSearch 
           onUserSelect={handleAddMember}
           excludeUserIds={currentGroup.users?.map(u => u.id) || []}

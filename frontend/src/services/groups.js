@@ -47,12 +47,21 @@ export const deleteGroup = async (groupId) => {
 // Add user to group
 export const addUserToGroup = async (groupId, userId) => {
   try {
+    console.log('Groups service - Adding user to group:', {
+      groupId,
+      userId,
+      url: `/group/${groupId}/user`,
+      data: { user_id: userId }
+    });
+    
     const response = await api.post(`/group/${groupId}/user`, {
       user_id: userId
     });
+    console.log('Groups service - Add user response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error adding user to group:', error);
+    console.error('Groups service - Error adding user to group:', error);
+    console.error('Groups service - Error response:', error.response?.data);
     throw error;
   }
 };

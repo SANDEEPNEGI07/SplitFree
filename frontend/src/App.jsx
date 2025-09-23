@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useGroups } from './hooks/useApi';
 import Header from './components/Layout/Header';
@@ -57,6 +57,7 @@ const PublicRoute = ({ children }) => {
 
 // Temporary placeholder components
 const Groups = () => {
+  const navigate = useNavigate();
   const { groups, loading, createGroup } = useGroups();
   const [showCreateForm, setShowCreateForm] = React.useState(false);
   const [formData, setFormData] = React.useState({ name: '', description: '' });
@@ -136,8 +137,18 @@ const Groups = () => {
                 <span>💳 0 expenses</span>
               </div>
               <div className="group-actions">
-                <button className="btn btn-outline">View Details</button>
-                <button className="btn btn-primary">Add Expense</button>
+                <button 
+                  className="btn btn-outline"
+                  onClick={() => navigate(`/group/${group.id}`)}
+                >
+                  View Details
+                </button>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => navigate(`/group/${group.id}`)}
+                >
+                  Add Expense
+                </button>
               </div>
             </div>
           ))

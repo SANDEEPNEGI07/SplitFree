@@ -14,10 +14,18 @@ export const getGroupExpenses = async (groupId) => {
 // Create a new expense in a group
 export const createExpense = async (groupId, expenseData) => {
   try {
+    console.log('Expenses service - Creating expense:', {
+      groupId,
+      expenseData,
+      url: `/group/${groupId}/expense`
+    });
+    
     const response = await api.post(`/group/${groupId}/expense`, expenseData);
+    console.log('Expenses service - Create expense response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating expense:', error);
+    console.error('Expenses service - Error creating expense:', error);
+    console.error('Expenses service - Error response:', error.response?.data);
     throw error;
   }
 };
