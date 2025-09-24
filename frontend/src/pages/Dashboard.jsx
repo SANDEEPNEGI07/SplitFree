@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGroups } from '../hooks/useApi';
 import { getGroupBalances } from '../services/settlements';
+import { getRecentActivity } from '../services/history';
 import { formatCurrency } from '../utils/helpers';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import './Pages.css';
@@ -17,6 +18,8 @@ const Dashboard = () => {
     recentExpenses: 0
   });
   const [balancesLoading, setBalancesLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   // Fetch balance data for all groups
   useEffect(() => {
@@ -88,14 +91,36 @@ const Dashboard = () => {
     fetchBalances();
   }, [groups, user]);
 
+  // Fetch recent activity across all groups
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      if (!groups || groups.length === 0) {
+        setActivityLoading(false);
+        return;
+      }
+
+      setActivityLoading(true);
+      try {
+        console.log('Dashboard: Fetching recent activity for groups:', groups);
+        const activity = await getRecentActivity(groups, 5); // Get 5 most recent items
+        console.log('Dashboard: Recent activity received:', activity);
+        setRecentActivity(activity);
+      } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        setRecentActivity([]);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
+    fetchRecentActivity();
+  }, [groups]);
+
   if (groupsLoading || balancesLoading) {
     return <LoadingSpinner message="Loading dashboard..." />;
   }
 
   const totalGroups = groups?.length || 0;
-  
-  // TODO: Replace with real activity data from backend
-  const recentActivity = []; // Will be populated from /history endpoint
 
   return (
     <div className="container">
@@ -146,15 +171,23 @@ const Dashboard = () => {
               <a href="/history" className="section-link">View all</a>
             </div>
             <div className="activity-list">
-              {recentActivity.length > 0 ? (
-                recentActivity.map(activity => (
-                  <div key={activity.id} className="activity-item">
+              {activityLoading ? (
+                <div className="activity-loading">
+                  <p>Loading recent activity...</p>
+                </div>
+              ) : recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={`${activity.type}-${activity.id}-${index}`} className="activity-item">
                     <div className="activity-icon">
-                      {activity.type === 'expense' ? '🧾' : '💰'}
+                      {activity.type === 'expense' ? '💳' : '💰'}
                     </div>
                     <div className="activity-content">
-                      <h4>{activity.description}</h4>
-                      <p>{activity.group} • {activity.date}</p>
+                      <h4>
+                        {activity.type === 'expense' 
+                          ? activity.description 
+                          : `Settlement in ${activity.groupName}`}
+                      </h4>
+                      <p>{activity.groupName} • {activity.date ? new Date(activity.date).toLocaleDateString() : 'Recent'}</p>
                     </div>
                     <div className="activity-amount">
                       {formatCurrency(activity.amount)}

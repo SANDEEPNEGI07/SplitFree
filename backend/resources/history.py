@@ -1,9 +1,9 @@
 from flask_smorest import Blueprint
 from flask.views import MethodView
 from sqlalchemy.orm import joinedload
-from flask_jwt_extended import jwt_required, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
-from models import ExpenseModel, ExpenseSplitModel, SettlementModel, GroupModel
+from models import ExpenseModel, ExpenseSplitModel, SettlementModel, GroupModel, GroupUserModel
 from schemas import ExpenseHistoryResponseSchema, ExpenseHistoryItemSchema, SettlementHistoryItemSchema
 
 blp = Blueprint("History", __name__, description="Expense and settlement history")
@@ -14,7 +14,19 @@ class GroupHistory(MethodView):
     @jwt_required()
     @blp.response(200, ExpenseHistoryResponseSchema)
     def get(self, group_id):
-        """Get complete expense and settlement history for a group."""
+        """Get complete expense and settlement history for a group - only if user is a member."""
+        
+        # Check if the user is a member of this group
+        current_user_id = int(get_jwt_identity())
+        group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=current_user_id
+        ).first()
+        
+        if not group_user:
+            from flask_smorest import abort
+            abort(403, message="Access denied. You are not a member of this group.")
+        
         GroupModel.query.get_or_404(group_id)
 
         # Load expenses with splits to compute owed/paid/remaining
@@ -73,4 +85,6 @@ class GroupHistory(MethodView):
         # Combine chronologically if dates exist; settlements have None date so append after expenses
         # If you later add timestamps to settlements, you can sort by that.
         items = expense_items + settlement_items
+        print(f"DEBUG: Returning {len(items)} items for group {group_id}")
+        print(f"DEBUG: Items: {items}")
         return {"group_id": group_id, "items": items}
