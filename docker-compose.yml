@@ -23,7 +23,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=https://splitfree.onrender.com
+      - REACT_APP_API_URL=http://backend:5000
     volumes:
       - ./frontend:/app
       - /app/node_modules

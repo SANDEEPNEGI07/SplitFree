@@ -142,3 +142,6 @@ def create_app(db_url = None):
     api.register_blueprint(HistoryBlueprint)
 
     return app
+
+# Create app instance for Gunicorn
+app = create_app()
