@@ -50,7 +50,13 @@ def create_app(db_url = None):
     migrate = Migrate(app, db)
     
     # Enable CORS for frontend communication
-    CORS(app)
+    # Allow requests from frontend domain and localhost for development
+    allowed_origins = [
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+        "http://localhost:3000",  # For local development
+        "https://localhost:3000"  # For local HTTPS development
+    ]
+    CORS(app, origins=allowed_origins)
 
     # Enable foreign key constraints for SQLite
     @event.listens_for(Engine, "connect")
