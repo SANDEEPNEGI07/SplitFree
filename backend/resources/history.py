@@ -85,6 +85,4 @@ class GroupHistory(MethodView):
         # Combine chronologically if dates exist; settlements have None date so append after expenses
         # If you later add timestamps to settlements, you can sort by that.
         items = expense_items + settlement_items
-        print(f"DEBUG: Returning {len(items)} items for group {group_id}")
-        print(f"DEBUG: Items: {items}")
         return {"group_id": group_id, "items": items}

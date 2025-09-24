@@ -104,24 +104,11 @@ class GroupExpense(MethodView):
             user_id=current_user_id
         ).first()
         
-        print(f"DEBUG: Group membership found: {group_user}")
-        if group_user:
-            print(f"DEBUG: User {current_user_id} IS a member of group {group_id}")
-        else:
-            print(f"DEBUG: User {current_user_id} is NOT a member of group {group_id}")
-            # Let's check all group memberships for this user
-            all_memberships = GroupUserModel.query.filter_by(user_id=current_user_id).all()
-            print(f"DEBUG: User {current_user_id} is member of groups: {[m.group_id for m in all_memberships]}")
-            # Let's also check all members of this group
-            all_group_members = GroupUserModel.query.filter_by(group_id=group_id).all()
-            print(f"DEBUG: Group {group_id} has members: {[m.user_id for m in all_group_members]}")
-        
         if not group_user:
             abort(403, message="Access denied. You are not a member of this group.")
         
         group = GroupModel.query.get_or_404(group_id)
         expenses = ExpenseModel.query.filter_by(group_id=group_id).all()
-        print(f"DEBUG: Found {len(expenses)} expenses in group {group_id}")
         return expenses
     
 @blp.route("/group/<int:group_id>/expense/<int:expense_id>")
