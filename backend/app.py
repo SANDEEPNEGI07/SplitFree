@@ -57,7 +57,11 @@ def create_app(db_url = None):
         "https://localhost:3000",
         "https://splitwise-api-frontend.onrender.com"
     ]
-    CORS(app, origins=allowed_origins)
+    CORS(app, 
+         origins=allowed_origins,
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         allow_headers=['Content-Type', 'Authorization'],
+         supports_credentials=True)
 
     # Enable foreign key constraints for SQLite
     @event.listens_for(Engine, "connect")
