@@ -51,12 +51,6 @@ const Header = () => {
               Groups
             </Link>
             <Link 
-              to="/expenses" 
-              className={`nav-link ${isActive('/expenses')}`}
-            >
-              Expenses
-            </Link>
-            <Link 
               to="/history" 
               className={`nav-link ${isActive('/history')}`}
             >

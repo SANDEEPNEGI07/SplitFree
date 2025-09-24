@@ -170,19 +170,6 @@ const Groups = () => {
   );
 };
 
-const Expenses = () => (
-  <div className="container">
-    <div className="page-header">
-      <h1>Expenses</h1>
-      <p>Track and manage your expenses here.</p>
-    </div>
-    <div className="coming-soon">
-      <h2>🚧 Coming Soon!</h2>
-      <p>Expenses functionality is being developed.</p>
-    </div>
-  </div>
-);
-
 const History = () => (
   <div className="container">
     <div className="page-header">
@@ -242,14 +229,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <GroupDetails />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/expenses" 
-              element={
-                <ProtectedRoute>
-                  <Expenses />
                 </ProtectedRoute>
               } 
             />
