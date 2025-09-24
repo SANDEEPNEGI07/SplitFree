@@ -82,7 +82,5 @@ class GroupHistory(MethodView):
                 "splits": None,
             })
 
-        # Combine chronologically if dates exist; settlements have None date so append after expenses
-        # If you later add timestamps to settlements, you can sort by that.
         items = expense_items + settlement_items
         return {"group_id": group_id, "items": items}

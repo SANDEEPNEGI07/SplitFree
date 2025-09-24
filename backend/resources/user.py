@@ -93,20 +93,16 @@ class User(MethodView):
         """Delete user permanently. Cannot delete if user has financial obligations."""
         user = UserModel.query.get_or_404(user_id)
         
-        # Check various constraints that prevent deletion
         constraints = []
         
-        # Check if user has paid for any expenses
         expenses_count = user.expenses_paid.count()
         if expenses_count > 0:
             constraints.append(f"has paid for {expenses_count} expense(s)")
         
-        # Check if user has any expense splits (owes money)
         splits_count = len(user.splits)
         if splits_count > 0:
             constraints.append(f"has {splits_count} outstanding expense split(s)")
         
-        # Check if user is member of any groups
         groups_count = len(user.groups)
         if groups_count > 0:
             constraints.append(f"is a member of {groups_count} group(s)")

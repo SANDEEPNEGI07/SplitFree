@@ -43,8 +43,6 @@ class GroupExpense(MethodView):
         if payer_id not in member_ids:
             abort(400, message="Payer must be a member of the group.")
 
-        # Check for potential duplicate (same description, amount, payer, and date within the same day)
-        # This allows similar expenses but prevents accidental double-clicks/submissions
         current_date = expense_data.get("date") or datetime.now().date()
         existing_expense = ExpenseModel.query.filter(
             ExpenseModel.description == expense_data["description"],
@@ -118,10 +116,8 @@ class ExpenseDetail(MethodView):
     def delete(self, group_id, expense_id):
         """Delete an expense and warn if settlements may be affected - only if user is a member."""
         
-        # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
-        # Check if the user is a member of this group
         group_user = GroupUserModel.query.filter_by(
             group_id=group_id, 
             user_id=current_user_id
@@ -132,14 +128,11 @@ class ExpenseDetail(MethodView):
         
         expense = ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
         
-        # Check if there are any settlements in this group
         settlements_count = SettlementModel.query.filter_by(group_id=group_id).count()
         
-        # Delete the expense (cascades to expense splits automatically)
         db.session.delete(expense)
         db.session.commit()
         
-        # Provide warning if settlements exist that may now be incorrect
         message = "Expense deleted successfully"
         if settlements_count > 0:
             message += f". Warning: {settlements_count} settlement(s) exist in this group. Consider recalculating balances to ensure settlements are still appropriate."
@@ -151,10 +144,8 @@ class ExpenseDetail(MethodView):
     def get(self,group_id, expense_id):
         """Get details of a specific expense by ID - only if user is a member."""
         
-        # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
-        # Check if the user is a member of this group
         group_user = GroupUserModel.query.filter_by(
             group_id=group_id, 
             user_id=current_user_id
