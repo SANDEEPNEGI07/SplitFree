@@ -2,7 +2,7 @@ import uuid
 from flask import request
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask_jwt_extended import jwt_required, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from schemas import GroupSchema, GroupCreateSchema, UserIdInputSchema
@@ -20,8 +20,7 @@ class GroupList(MethodView):
     @blp.response(200, GroupSchema(many=True))
     def get(self):
         """Get all groups where the current user is a member."""
-        from flask_jwt_extended import get_jwt_identity
-        
+    
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
@@ -50,9 +49,7 @@ class GroupList(MethodView):
         group = GroupModel(**group_data)
         try:
             db.session.add(group)
-            db.session.flush()  # Flush to get the group ID
-            
-            # Automatically add the creator to the group
+            db.session.flush()
             group_user = GroupUserModel(group_id=group.id, user_id=current_user_id)
             db.session.add(group_user)
             

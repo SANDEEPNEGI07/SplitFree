@@ -67,10 +67,10 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is authenticated on app load
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
         if (authService.isAuthenticated()) {
-          const user = authService.getCurrentUser();
+          const user = await authService.getCurrentUser();
           if (user) {
             dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: user });
           } else {
@@ -94,13 +94,10 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
-      console.log('Attempting login with:', credentials);
       const response = await authService.login(credentials);
-      console.log('Login response:', response);
       
-      // Get user data from token
-      const user = authService.getCurrentUser();
-      console.log('Decoded user:', user);
+      // Get user data from response or fetch separately
+      const user = response.user || await authService.getCurrentUser();
       
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: user });
       

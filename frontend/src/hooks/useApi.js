@@ -53,7 +53,29 @@ export const useGroups = () => {
       setLoading(true);
       setError(null);
       const data = await fetchAllGroups();
-      setGroups(data);
+      
+      // Enrich groups with expense data
+      const enrichedGroups = await Promise.all(
+        data.map(async (group) => {
+          try {
+            const expenses = await fetchGroupExpenses(group.id);
+            return {
+              ...group,
+              expense_count: expenses.length,
+              total_amount: expenses.reduce((sum, expense) => sum + expense.amount, 0)
+            };
+          } catch (error) {
+            console.error(`Error fetching expenses for group ${group.id}:`, error);
+            return {
+              ...group,
+              expense_count: 0,
+              total_amount: 0
+            };
+          }
+        })
+      );
+      
+      setGroups(enrichedGroups);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -64,7 +86,8 @@ export const useGroups = () => {
   const createGroup = async (groupData) => {
     try {
       const newGroup = await createGroupAPI(groupData);
-      setGroups(prev => [...prev, newGroup]);
+      // Refresh all groups to get updated expense data
+      await fetchGroups();
       return newGroup;
     } catch (err) {
       setError(err.message);

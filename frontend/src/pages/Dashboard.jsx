@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGroups } from '../hooks/useApi';
+import { getGroupBalances } from '../services/settlements';
 import { formatCurrency } from '../utils/helpers';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import './Pages.css';
@@ -10,20 +11,75 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { groups, loading: groupsLoading } = useGroups();
+  const [balanceStats, setBalanceStats] = useState({
+    totalOwed: 0,
+    totalOwe: 0,
+    recentExpenses: 0
+  });
+  const [balancesLoading, setBalancesLoading] = useState(true);
 
-  if (groupsLoading) {
+  // Fetch balance data for all groups
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (!groups || !user || !user.id) {
+        setBalancesLoading(false);
+        return;
+      }
+
+      setBalancesLoading(true);
+      try {
+        let totalOwed = 0;
+        let totalOwe = 0;
+        let recentExpenses = 0;
+
+        // Fetch balances for each group
+        for (const group of groups) {
+          try {
+            const balances = await getGroupBalances(group.id);
+            
+            // Find user balance with flexible comparison (handles string/number type differences)
+            const userBalance = balances.find(b => 
+              b.user_id === user.id || 
+              b.user_id === parseInt(user.id) || 
+              parseInt(b.user_id) === parseInt(user.id)
+            );
+            
+            if (userBalance && userBalance.balance !== undefined) {
+              const balance = parseFloat(userBalance.balance);
+              if (balance > 0) {
+                totalOwed += balance;
+              } else if (balance < 0) {
+                totalOwe += Math.abs(balance);
+              }
+            }
+            
+            recentExpenses += group.expense_count || 0;
+          } catch (error) {
+            console.error(`Error fetching balances for group ${group.id}:`, error);
+          }
+        }
+
+        setBalanceStats({
+          totalOwed: totalOwed,
+          totalOwe: totalOwe,
+          recentExpenses: recentExpenses
+        });
+      } catch (error) {
+        console.error('Error fetching balance stats:', error);
+      } finally {
+        setBalancesLoading(false);
+      }
+    };
+
+    fetchBalances();
+  }, [groups, user]);
+
+  if (groupsLoading || balancesLoading) {
     return <LoadingSpinner message="Loading dashboard..." />;
   }
 
   const totalGroups = groups?.length || 0;
   
-  // TODO: Replace with real API data when endpoints are ready
-  const mockStats = {
-    totalOwed: 0, // Will come from backend balance calculation
-    totalOwe: 0,  // Will come from backend balance calculation
-    recentExpenses: 0 // Will come from backend expense count
-  };
-
   // TODO: Replace with real activity data from backend
   const recentActivity = []; // Will be populated from /history endpoint
 
@@ -40,7 +96,7 @@ const Dashboard = () => {
             <div className="stat-icon positive">💰</div>
             <div className="stat-content">
               <h3>You are owed</h3>
-              <p className="stat-amount positive">{formatCurrency(mockStats.totalOwed)}</p>
+              <p className="stat-amount positive">{formatCurrency(balanceStats.totalOwed)}</p>
             </div>
           </div>
 
@@ -48,7 +104,7 @@ const Dashboard = () => {
             <div className="stat-icon negative">💸</div>
             <div className="stat-content">
               <h3>You owe</h3>
-              <p className="stat-amount negative">{formatCurrency(mockStats.totalOwe)}</p>
+              <p className="stat-amount negative">{formatCurrency(balanceStats.totalOwe)}</p>
             </div>
           </div>
 
@@ -64,7 +120,7 @@ const Dashboard = () => {
             <div className="stat-icon neutral">📋</div>
             <div className="stat-content">
               <h3>Recent Expenses</h3>
-              <p className="stat-amount">{mockStats.recentExpenses}</p>
+              <p className="stat-amount">{balanceStats.recentExpenses}</p>
             </div>
           </div>
         </div>
@@ -118,9 +174,8 @@ const Dashboard = () => {
                         <span className="group-members">
                           👥 {group.users?.length || 0} members
                         </span>
-                        {/* TODO: Add expense count when backend provides it */}
                         <span className="group-expenses">
-                          💳 0 expenses
+                          💳 {group.expense_count || 0} expenses
                         </span>
                       </div>
                     </div>

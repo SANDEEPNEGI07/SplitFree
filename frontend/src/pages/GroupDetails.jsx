@@ -4,6 +4,7 @@ import './Pages.css';
 import { useGroups } from '../hooks/useApi';
 import { getGroupExpenses, createExpense, deleteExpense } from '../services/expenses';
 import { addUserToGroup, removeUserFromGroup, getUserById } from '../services/groups';
+import { getGroupBalances, createSettlement, getGroupSettlements } from '../services/settlements';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import Modal from '../components/UI/Modal';
 import Button from '../components/UI/Button';
@@ -14,13 +15,21 @@ const GroupDetails = () => {
   const navigate = useNavigate();
   const { groups, loading: groupsLoading, refetch } = useGroups();
   const [expenses, setExpenses] = useState([]);
+  const [balances, setBalances] = useState([]);
+  const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
     amount: '',
     description: '',
     paid_by: ''
+  });
+  const [settlementForm, setSettlementForm] = useState({
+    paid_by: '',
+    paid_to: '',
+    amount: ''
   });
 
   // Debug logging for modal state changes
@@ -43,8 +52,14 @@ const GroupDetails = () => {
   const loadGroupData = async () => {
     setLoading(true);
     try {
-      const expensesData = await getGroupExpenses(groupId);
+      const [expensesData, balancesData, settlementsData] = await Promise.all([
+        getGroupExpenses(groupId),
+        getGroupBalances(groupId),
+        getGroupSettlements(groupId)
+      ]);
       setExpenses(expensesData);
+      setBalances(balancesData);
+      setSettlements(settlementsData);
     } catch (error) {
       console.error('Error loading group data:', error);
     } finally {
@@ -127,6 +142,31 @@ const GroupDetails = () => {
     }
   };
 
+  const handleCreateSettlement = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const settlementData = {
+        paid_by: parseInt(settlementForm.paid_by),
+        paid_to: parseInt(settlementForm.paid_to),
+        amount: parseFloat(settlementForm.amount)
+      };
+      
+      console.log('Creating settlement:', settlementData);
+      
+      await createSettlement(groupId, settlementData);
+      
+      setShowSettlementModal(false);
+      setSettlementForm({ paid_by: '', paid_to: '', amount: '' });
+      loadGroupData(); // Refresh data
+      
+      alert('Settlement recorded successfully!');
+    } catch (error) {
+      console.error('Error creating settlement:', error);
+      alert('Error creating settlement: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   const calculateUserBalance = (userId) => {
     let balance = 0;
     expenses.forEach(expense => {
@@ -192,6 +232,12 @@ const GroupDetails = () => {
           }}>
             Add Expense
           </Button>
+          <Button 
+            onClick={() => setShowSettlementModal(true)}
+            variant="success"
+          >
+            Settle Up
+          </Button>
         </div>
       </div>
 
@@ -216,7 +262,8 @@ const GroupDetails = () => {
           {currentGroup.users && currentGroup.users.length > 0 ? (
             <div className="members-list">
               {currentGroup.users.map(user => {
-                const balance = calculateUserBalance(user.id);
+                const userBalance = balances.find(b => b.user_id === user.id);
+                const balance = userBalance ? userBalance.balance : 0;
                 return (
                   <div key={user.id} className="member-card">
                     <div className="member-info">
@@ -239,6 +286,48 @@ const GroupDetails = () => {
             </div>
           ) : (
             <p className="empty-state">No members in this group yet.</p>
+          )}
+        </div>
+
+        <div className="balances-section">
+          <h2>Balances & Settlements</h2>
+          {balances.length > 0 ? (
+            <div className="balances-list">
+              {balances.map(balance => (
+                <div key={balance.user_id} className="balance-card">
+                  <div className="balance-info">
+                    <h4>{balance.username}</h4>
+                    <p className={`balance-amount ${balance.balance > 0 ? 'positive' : balance.balance < 0 ? 'negative' : 'neutral'}`}>
+                      {balance.balance > 0 ? `Gets back $${balance.balance.toFixed(2)}` : 
+                       balance.balance < 0 ? `Owes $${Math.abs(balance.balance).toFixed(2)}` : 
+                       'Settled up'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-state">No balance data available.</p>
+          )}
+          
+          {settlements.length > 0 && (
+            <div className="settlements-history">
+              <h3>Recent Settlements</h3>
+              <div className="settlements-list">
+                {settlements.slice(0, 5).map(settlement => {
+                  const paidBy = currentGroup.users?.find(u => u.id === settlement.paid_by);
+                  const paidTo = currentGroup.users?.find(u => u.id === settlement.paid_to);
+                  return (
+                    <div key={settlement.id} className="settlement-card">
+                      <p>
+                        <strong>{paidBy?.username || 'Unknown'}</strong> paid <strong>${settlement.amount.toFixed(2)}</strong> to <strong>{paidTo?.username || 'Unknown'}</strong>
+                      </p>
+                      <p className="settlement-date">{new Date(settlement.date).toLocaleDateString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
 
@@ -366,6 +455,67 @@ const GroupDetails = () => {
           onUserSelect={handleAddMember}
           excludeUserIds={currentGroup.users?.map(u => u.id) || []}
         />
+      </Modal>
+
+      {/* Settlement Modal */}
+      <Modal
+        isOpen={showSettlementModal}
+        onClose={() => setShowSettlementModal(false)}
+        title="Record Settlement"
+      >
+        <form onSubmit={handleCreateSettlement} className="modal-form">
+          <div className="form-group">
+            <label>Who paid?</label>
+            <select
+              value={settlementForm.paid_by}
+              onChange={(e) => setSettlementForm({...settlementForm, paid_by: e.target.value})}
+              required
+            >
+              <option value="">Select who paid</option>
+              {currentGroup.users?.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.username}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Who received the payment?</label>
+            <select
+              value={settlementForm.paid_to}
+              onChange={(e) => setSettlementForm({...settlementForm, paid_to: e.target.value})}
+              required
+            >
+              <option value="">Select who received</option>
+              {currentGroup.users?.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.username}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Amount ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={settlementForm.amount}
+              onChange={(e) => setSettlementForm({...settlementForm, amount: e.target.value})}
+              required
+              placeholder="0.00"
+            />
+          </div>
+          <div className="modal-actions">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => setShowSettlementModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="success">Record Settlement</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

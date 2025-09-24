@@ -59,17 +59,6 @@ class TokenRefresh(MethodView):
     def post(self):
         """
         Refresh access token using refresh token.
-        
-        Generates a new access token using a valid refresh token. 
-        The old refresh token is added to blocklist for security.
-        New access token is marked as non-fresh.
-        
-        Requires:
-            Valid refresh token in Authorization header
-            
-        Returns:
-            200: New access token
-            401: Error if refresh token is invalid or expired
         """
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)

@@ -13,6 +13,7 @@ import Register from './components/Auth/Register';
 // Pages
 import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
+import UserDebug from './pages/UserDebug';
 import GroupDetails from './pages/GroupDetails';
 
 import './App.css';
@@ -134,7 +135,8 @@ const Groups = () => {
               <p>{group.description}</p>
               <div className="group-stats">
                 <span>👥 {group.users?.length || 0} members</span>
-                <span>💳 0 expenses</span>
+                <span>💳 {group.expense_count || 0} expenses</span>
+                <span>💰 ${(group.total_amount || 0).toFixed(2)}</span>
               </div>
               <div className="group-actions">
                 <button 
@@ -265,6 +267,10 @@ function App() {
             <Route 
               path="/debug" 
               element={<Debug />} 
+            />
+            <Route 
+              path="/userdebug" 
+              element={<UserDebug />} 
             />
 
             {/* Default Route */}

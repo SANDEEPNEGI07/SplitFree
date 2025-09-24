@@ -15,7 +15,7 @@ export const authService = {
     const response = await apiRequest(HTTP_METHODS.POST, API_ENDPOINTS.LOGIN, credentials);
     console.log('API login response:', response);
     
-    // Store tokens and user data
+    // Store tokens
     if (response.access_token) {
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
       console.log('Stored access token');
@@ -23,6 +23,15 @@ export const authService = {
     if (response.refresh_token) {
       localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refresh_token);
       console.log('Stored refresh token');
+    }
+    
+    // Fetch user details
+    try {
+      const user = await authService.getCurrentUser();
+      response.user = user;
+      console.log('Fetched user details:', user);
+    } catch (error) {
+      console.error('Error fetching user details:', error);
     }
     
     return response;
@@ -68,21 +77,36 @@ export const authService = {
     return !!localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   },
 
-  // Get current user data from token
-  getCurrentUser: () => {
+  // Get current user data from token and API
+  getCurrentUser: async () => {
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (!token) return null;
 
     try {
-      // Decode JWT token to get user info
+      // Decode JWT token to get user ID
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return {
-        id: payload.sub,
-        email: payload.email,
-        // Add other user fields as needed
-      };
+      const userId = payload.sub;
+      
+      // Fetch full user details from API
+      const userResponse = await apiRequest(HTTP_METHODS.GET, `/user/${userId}`);
+      
+      // Ensure the response has the expected structure and convert ID to number
+      if (userResponse && userResponse.id) {
+        return {
+          ...userResponse,
+          id: parseInt(userResponse.id) // Ensure ID is a number for consistent comparison
+        };
+      } else {
+        console.error('Invalid user response format:', userResponse);
+        return null;
+      }
     } catch (error) {
-      console.error('Error decoding token:', error);
+      console.error('Error fetching current user:', error);
+      // If there's an authentication error, clear the token
+      if (error.message && (error.message.includes('401') || error.message.includes('invalid_token'))) {
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      }
       return null;
     }
   },

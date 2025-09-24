@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useGroups } from '../hooks/useApi';
+import { getGroupBalances } from '../services/settlements';
 
 const Debug = () => {
-  const [testResults, setTestResults] = useState([]);
+  const { user, isAuthenticated } = useAuth();
+  const { groups } = useGroups();
+  const [debugInfo, setDebugInfo] = useState({});
 
   const addResult = (test, result, error = null) => {
-    setTestResults(prev => [...prev, { test, result, error, time: new Date().toLocaleTimeString() }]);
+    // Legacy function for compatibility
   };
 
   const testBackendConnection = async () => {

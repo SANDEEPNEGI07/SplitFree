@@ -71,7 +71,7 @@ const Header = () => {
               </div>
               <div className="user-info">
                 <span className="user-name">
-                  {user?.username || 'User'}
+                  {user?.username}
                 </span>
                 <span className="user-email">{user?.email}</span>
               </div>
