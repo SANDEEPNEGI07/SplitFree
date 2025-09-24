@@ -53,8 +53,9 @@ def create_app(db_url = None):
     # Allow requests from frontend domain and localhost for development
     allowed_origins = [
         os.getenv("FRONTEND_URL", "http://localhost:3000"),
-        "http://localhost:3000",  # For local development
-        "https://localhost:3000"  # For local HTTPS development
+        "http://localhost:3000",
+        "https://localhost:3000",
+        "https://splitwise-api-frontend.onrender.com"
     ]
     CORS(app, origins=allowed_origins)
 
