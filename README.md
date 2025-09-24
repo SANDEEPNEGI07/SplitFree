@@ -1,42 +1,67 @@
-# Splitwise - Expense Splitting Application
+# 💰 SplitFree - Expense Splitting Application
 
-A full-stack expense splitting application with Flask backend and React frontend, featuring JWT authentication and real-time expense management.
+A modern, full-stack expense splitting application built with Flask and React, designed to help friends and groups manage shared expenses with ease.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
+[![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)](https://flask.palletsprojects.com)
+
+## 🌟 Overview
+
+SplitFree simplifies expense management for groups by automatically calculating who owes whom and how much. Whether you're splitting restaurant bills, shared apartment expenses, or travel costs, SplitFree handles the complex calculations and keeps everyone informed about their financial obligations.
 
 ## 🚀 Features
 
-### Backend (Flask API)
-- User registration/login with JWT authentication
-- Secure group management with auto-membership
-- Expense tracking with automatic equal splits
-- Settlement recording and balance calculations
-- Complete expense history and activity tracking
-- Authorization-based data access control
+## 📱 Key Features
 
-### Frontend (React)
-- Modern responsive UI with React 18
-- User authentication with JWT tokens
-- Dashboard with expense overview and statistics
-- Group management with member addition/removal
-- Real-time expense creation and tracking
-- Modal-based forms for better UX
-- Protected routes and authentication context
+| Feature | Description |
+|---------|-------------|
+| 🔐 **Authentication** | Secure login/signup with JWT tokens |
+| 👥 **Group Management** | Create groups, add/remove members |
+| 💳 **Expense Tracking** | Add expenses, automatic equal splitting |
+| 💰 **Balance Calculation** | Real-time who-owes-whom calculations |
+| 📊 **Settlement System** | Record payments between members |
+| 📱 **Responsive Design** | Works on desktop and mobile |
+
+- 👥 **Create Groups** - Organize expenses with roommates, friends, or travel buddies
+- 💳 **Add Expenses** - Record shared costs and automatically split them equally
+- 💰 **Track Balances** - See who owes what at a glance
+- 📊 **Settle Up** - Record payments and keep balances updated
+- 🔒 **Stay Secure** - JWT authentication keeps your data safe
 
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Flask** - Web framework
-- **SQLAlchemy** - ORM for database operations
-- **Flask-JWT-Extended** - JWT authentication
-- **Flask-Smorest** - API blueprint and documentation
-- **Alembic** - Database migrations
-- **SQLite** - Database (development)
+- 🐍 **Python** - Programming language
+- 🌶️ **Flask** - Web framework
+- 🗄️ **SQLAlchemy** - Database ORM
+- 🔐 **JWT** - Authentication
+- 📚 **Swagger** - API documentation
+- 🐳 **Docker** - Containerization
 
-### Frontend
-- **React 18** - UI library
-- **React Router** - Client-side routing
-- **Axios** - HTTP client for API calls
-- **CSS3** - Responsive styling
-- **Context API** - State management
+### Frontend  
+- ⚛️ **React 18** - UI library
+- 🎨 **CSS3** - Styling
+- 🌐 **Axios** - HTTP client
+- 🛣️ **React Router** - Navigation
+
+### Database
+- 💾 **SQLite** - Development database
+- 🐘 **PostgreSQL** - Production ready
+
+## ⚠️ Limitations
+
+- Equal splits only (no custom percentages)
+- No expense categories
+- Manual payment recording
+
+## 🚀 Coming Soon
+
+- 📊 Custom split ratios
+- 🏷️ Expense categories  
+- 📸 Receipt photos
+- 🔔 Push notifications
 
 ## 📦 Installation & Setup
 
