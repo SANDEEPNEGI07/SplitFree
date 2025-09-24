@@ -1,11 +1,12 @@
+from datetime import datetime, timedelta
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from flask_jwt_extended import jwt_required, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from schemas import ExpenseSchema, ExpenseCreateSchema
 from db import db
-from models import ExpenseModel, GroupModel, ExpenseSplitModel, SettlementModel
+from models import ExpenseModel, GroupModel, ExpenseSplitModel, SettlementModel, GroupUserModel
 
 blp = Blueprint("Expense", __name__, description="Operations on expenses")
 
@@ -17,8 +18,6 @@ class GroupExpense(MethodView):
     @blp.response(201, ExpenseSchema)
     def post(self, expense_data, group_id):
         """Create a new expense in a group and split it equally among all members - only if user is a member."""
-        from flask_jwt_extended import get_jwt_identity
-        from models import GroupUserModel
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
@@ -44,16 +43,19 @@ class GroupExpense(MethodView):
         if payer_id not in member_ids:
             abort(400, message="Payer must be a member of the group.")
 
-        existing_expense = ExpenseModel.query.filter_by(
-            description=expense_data["description"],
-            amount=expense_data["amount"],
-            paid_by=expense_data["paid_by"],
-            group_id=group_id,
-            date=expense_data.get("date")
+        # Check for potential duplicate (same description, amount, payer, and date within the same day)
+        # This allows similar expenses but prevents accidental double-clicks/submissions
+        current_date = expense_data.get("date") or datetime.now().date()
+        existing_expense = ExpenseModel.query.filter(
+            ExpenseModel.description == expense_data["description"],
+            ExpenseModel.amount == expense_data["amount"],
+            ExpenseModel.paid_by == expense_data["paid_by"],
+            ExpenseModel.group_id == group_id,
+            ExpenseModel.date == current_date
         ).first()
         
         if existing_expense:
-            abort(400, message="This expense already exists")
+            abort(409, message="A similar expense was already created today. If this is intentional, please modify the description slightly.")
 
         expense = ExpenseModel(**expense_data, group_id=group_id)
 
@@ -75,11 +77,11 @@ class GroupExpense(MethodView):
         
         except IntegrityError:
             db.session.rollback()
-            return {"message":"Expense already created"}
+            abort(409, message="Expense already created")
 
         except SQLAlchemyError:
             db.session.rollback()
-            return {"message":"An error occured while creating expense"}
+            abort(500, message="An error occurred while creating expense")
 
         return expense
     
@@ -87,21 +89,14 @@ class GroupExpense(MethodView):
     @blp.response(200, ExpenseSchema(many=True))
     def get(self, group_id):
         """Get all expenses in a specific group - only if user is a member."""
-        from flask_jwt_extended import get_jwt_identity
-        from models import GroupUserModel
         
         # Get the current logged-in user ID
         current_user_id_raw = get_jwt_identity()
-        print(f"DEBUG: Raw JWT identity: {current_user_id_raw} (type: {type(current_user_id_raw)})")
         
         try:
             current_user_id = int(current_user_id_raw)
-            print(f"DEBUG: Converted user ID: {current_user_id}")
-        except (ValueError, TypeError) as e:
-            print(f"DEBUG: Error converting user ID: {e}")
+        except (ValueError, TypeError):
             abort(400, message="Invalid user ID in token")
-        
-        print(f"DEBUG: User {current_user_id} trying to access expenses for group {group_id}")
         
         # Check if the user is a member of this group
         group_user = GroupUserModel.query.filter_by(
@@ -135,8 +130,6 @@ class ExpenseDetail(MethodView):
     @jwt_required()
     def delete(self, group_id, expense_id):
         """Delete an expense and warn if settlements may be affected - only if user is a member."""
-        from flask_jwt_extended import get_jwt_identity
-        from models import GroupUserModel
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
@@ -170,8 +163,6 @@ class ExpenseDetail(MethodView):
     @blp.response(200, ExpenseSchema)
     def get(self,group_id, expense_id):
         """Get details of a specific expense by ID - only if user is a member."""
-        from flask_jwt_extended import get_jwt_identity
-        from models import GroupUserModel
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())

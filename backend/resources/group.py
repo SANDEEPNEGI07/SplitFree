@@ -6,10 +6,8 @@ from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from schemas import GroupSchema, GroupCreateSchema, UserIdInputSchema
-
 from db import db
-
-from models import GroupModel, GroupUserModel, UserModel
+from models import GroupModel, GroupUserModel, UserModel, SettlementModel, ExpenseModel, ExpenseSplitModel
 
 blp = Blueprint("Group", __name__, description="Operations on group")
 
@@ -36,7 +34,6 @@ class GroupList(MethodView):
     @blp.response(201, GroupSchema)
     def post(self, group_data):
         """Create a new group and automatically add the creator as first member."""
-        from flask_jwt_extended import get_jwt_identity
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
@@ -72,27 +69,15 @@ class Group(MethodView):
     @blp.response(200, GroupSchema)
     def get(self, group_id):
         """Get group details by ID including all members - only if user is a member."""
-        from flask_jwt_extended import get_jwt_identity
-        
+    
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
-        
-        print(f"DEBUG: User {current_user_id} trying to access group {group_id}")
         
         # Check if the user is a member of this group
         group_user = GroupUserModel.query.filter_by(
             group_id=group_id, 
             user_id=current_user_id
         ).first()
-        
-        print(f"DEBUG: Group membership found: {group_user}")
-        if group_user:
-            print(f"DEBUG: User {current_user_id} IS a member of group {group_id}")
-        else:
-            print(f"DEBUG: User {current_user_id} is NOT a member of group {group_id}")
-            # Let's check all group memberships for this user
-            all_memberships = GroupUserModel.query.filter_by(user_id=current_user_id).all()
-            print(f"DEBUG: User {current_user_id} is member of groups: {[m.group_id for m in all_memberships]}")
         
         if not group_user:
             abort(403, message="Access denied. You are not a member of this group.")
@@ -102,7 +87,6 @@ class Group(MethodView):
     @jwt_required()
     def delete(self, group_id):
         """Delete group permanently. Cannot delete if group has expenses or settlements. Only group members can delete."""
-        from flask_jwt_extended import get_jwt_identity
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
@@ -148,7 +132,6 @@ class UserToGroup(MethodView):
     @blp.arguments(UserIdInputSchema)
     def post(self, user_data, group_id):
         """Add a user to a group by user ID. Only group members can add users."""
-        from flask_jwt_extended import get_jwt_identity
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
@@ -195,8 +178,6 @@ class RemoveUserFromGroup(MethodView):
     @jwt_required()
     def delete(self, group_id, user_id):
         """Remove a user from a group. Prevents removal if user has financial obligations. Only group members can remove users."""
-        from models import SettlementModel, ExpenseModel, ExpenseSplitModel
-        from flask_jwt_extended import get_jwt_identity
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())

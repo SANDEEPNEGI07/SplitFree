@@ -4,7 +4,7 @@ class SettlementModel(db.Model):
     __tablename__ = "settlements"
 
     id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Float, nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
 
     paid_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     paid_to = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)

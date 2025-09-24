@@ -6,3 +6,7 @@ class GroupUserModel(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), unique=False, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=False, nullable=False)
+    
+    # Ensure unique group-user combinations
+    __table_args__ = (db.UniqueConstraint('group_id', 'user_id', name='unique_group_user'),)
+    

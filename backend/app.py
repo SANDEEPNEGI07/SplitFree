@@ -65,7 +65,12 @@ def create_app(db_url = None):
 
     api = Api(app)
 
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+    # Validate JWT secret key is configured
+    jwt_secret = os.getenv("JWT_SECRET_KEY")
+    if not jwt_secret:
+        raise ValueError("JWT_SECRET_KEY environment variable must be set")
+    
+    app.config["JWT_SECRET_KEY"] = jwt_secret
     jwt = JWTManager(app)
 
     @jwt.token_in_blocklist_loader
