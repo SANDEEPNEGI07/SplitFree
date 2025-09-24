@@ -13,7 +13,6 @@ import Register from './components/Auth/Register';
 
 // Pages
 import Dashboard from './pages/Dashboard';
-import UserDebug from './pages/UserDebug';
 import GroupDetails from './pages/GroupDetails';
 
 import './App.css';
@@ -471,12 +470,6 @@ function App() {
                   <History />
                 </ProtectedRoute>
               } 
-            />
-
-            {/* User Debug Route - For development only */}
-            <Route 
-              path="/userdebug" 
-              element={<UserDebug />} 
             />
 
             {/* Default Route */}
