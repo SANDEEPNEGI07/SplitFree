@@ -1,5 +1,4 @@
 import os
-import sqlite3
 from dotenv import load_dotenv
 
 from flask import Flask, request, jsonify
@@ -7,8 +6,6 @@ from flask_smorest import abort, Api
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_cors import CORS
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
 
 from db import db
 from blocklist import BLOCKLIST
@@ -50,29 +47,17 @@ def create_app(db_url = None):
     migrate = Migrate(app, db)
     
     # Enable CORS for frontend communication
-    # Allow requests from frontend domain and localhost for development
     allowed_origins = [
         os.getenv("FRONTEND_URL", "http://localhost:3000"),
         "http://localhost:3000",
-        "https://localhost:3000",
         "https://splitwise-api-frontend.onrender.com"
     ]
     CORS(app, 
          origins=allowed_origins,
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-         allow_headers=['Content-Type', 'Authorization'],
-         supports_credentials=True)
-
-    # Enable foreign key constraints for SQLite
-    @event.listens_for(Engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
-        if isinstance(dbapi_connection, sqlite3.Connection):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.close()
-
-    # with app.app_context():
-    #     db.create_all()
+         allow_headers=['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+         supports_credentials=True,
+         max_age=3600)
 
     api = Api(app)
 
