@@ -71,10 +71,11 @@ const Header = () => {
               </div>
               <div className="user-info">
                 <span className="user-name">
-                  {user?.username}
+                  {user?.username || 'User'}
                 </span>
                 <span className="user-email">{user?.email}</span>
               </div>
+              {console.log('Header: Current user data:', user)}
               <button 
                 onClick={handleLogout}
                 className="logout-btn"

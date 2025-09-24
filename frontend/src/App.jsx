@@ -12,7 +12,6 @@ import Register from './components/Auth/Register';
 
 // Pages
 import Dashboard from './pages/Dashboard';
-import Debug from './pages/Debug';
 import UserDebug from './pages/UserDebug';
 import GroupDetails from './pages/GroupDetails';
 
@@ -263,11 +262,7 @@ function App() {
               } 
             />
 
-            {/* Debug Route - Remove in production */}
-            <Route 
-              path="/debug" 
-              element={<Debug />} 
-            />
+            {/* User Debug Route - For development only */}
             <Route 
               path="/userdebug" 
               element={<UserDebug />} 

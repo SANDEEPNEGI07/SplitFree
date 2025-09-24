@@ -21,7 +21,12 @@ const Dashboard = () => {
   // Fetch balance data for all groups
   useEffect(() => {
     const fetchBalances = async () => {
+      console.log('Dashboard: Starting fetchBalances');
+      console.log('Dashboard: Groups:', groups);
+      console.log('Dashboard: User:', user);
+      
       if (!groups || !user || !user.id) {
+        console.log('Dashboard: Missing groups or user, stopping');
         setBalancesLoading(false);
         return;
       }
@@ -35,7 +40,10 @@ const Dashboard = () => {
         // Fetch balances for each group
         for (const group of groups) {
           try {
+            console.log('Dashboard: Fetching balances for group', group.id);
             const balances = await getGroupBalances(group.id);
+            console.log('Dashboard: Received balances:', balances);
+            console.log('Dashboard: Current user:', user);
             
             // Find user balance with flexible comparison (handles string/number type differences)
             const userBalance = balances.find(b => 
@@ -43,14 +51,20 @@ const Dashboard = () => {
               b.user_id === parseInt(user.id) || 
               parseInt(b.user_id) === parseInt(user.id)
             );
+            console.log('Dashboard: Found user balance:', userBalance);
             
             if (userBalance && userBalance.balance !== undefined) {
               const balance = parseFloat(userBalance.balance);
+              console.log('Dashboard: Processing balance:', balance);
               if (balance > 0) {
                 totalOwed += balance;
+                console.log('Dashboard: Added to totalOwed:', balance, 'New total:', totalOwed);
               } else if (balance < 0) {
                 totalOwe += Math.abs(balance);
+                console.log('Dashboard: Added to totalOwe:', Math.abs(balance), 'New total:', totalOwe);
               }
+            } else {
+              console.log('Dashboard: No balance found for user');
             }
             
             recentExpenses += group.expense_count || 0;
