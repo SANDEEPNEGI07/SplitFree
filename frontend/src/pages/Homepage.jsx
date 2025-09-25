@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Button from '../components/UI/Button';
+import FormInput from '../components/UI/FormInput';
 import './Homepage.css';
 
 const Homepage = () => {
@@ -75,18 +77,18 @@ const Homepage = () => {
               <span className="logo-text">SplitFree</span>
             </div>
             <nav className="header-nav">
-              <button 
-                className="btn btn-outline"
+              <Button 
+                variant="outline"
                 onClick={() => openAuthModal('login')}
               >
                 Login
-              </button>
-              <button 
-                className="btn btn-primary"
+              </Button>
+              <Button 
+                variant="primary"
                 onClick={() => openAuthModal('signup')}
               >
                 Sign Up
-              </button>
+              </Button>
             </nav>
           </div>
         </div>
@@ -106,18 +108,20 @@ const Homepage = () => {
                 SplitFree makes group expense management simple and transparent.
               </p>
               <div className="hero-actions">
-                <button 
-                  className="btn btn-primary btn-large"
+                <Button 
+                  variant="primary"
+                  size="large"
                   onClick={() => openAuthModal('signup')}
                 >
                   Start Splitting for Free
-                </button>
-                <button 
-                  className="btn btn-outline btn-large"
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="large"
                   onClick={() => openAuthModal('login')}
                 >
                   Already have an account?
-                </button>
+                </Button>
               </div>
             </div>
             <div className="hero-image">
@@ -233,12 +237,13 @@ const Homepage = () => {
           <div className="cta-content">
             <h2>Ready to Start Splitting?</h2>
             <p>Join thousands of users who are already managing their group expenses with SplitFree</p>
-            <button 
-              className="btn btn-primary btn-large"
+            <Button 
+              variant="primary"
+              size="large"
               onClick={() => openAuthModal('signup')}
             >
               Sign Up Now - It's Free!
-            </button>
+            </Button>
           </div>
         </div>
       </section>
@@ -271,65 +276,61 @@ const Homepage = () => {
               {error && <div className="error-message">{error}</div>}
               
               {!isLogin && (
-                <div className="form-group">
-                  <label htmlFor="username">Username</label>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your username"
-                  />
-                </div>
+                <FormInput
+                  label="Username"
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter your username"
+                />
               )}
 
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your email"
-                />
-              </div>
+              <FormInput
+                label="Email"
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter your email"
+              />
 
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your password"
-                />
-              </div>
+              <FormInput
+                label="Password"
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter your password"
+              />
 
-              <button 
+              <Button 
                 type="submit" 
-                className="btn btn-primary btn-full"
+                variant="primary"
+                className="btn-full"
                 disabled={loading}
+                loading={loading}
               >
-                {loading ? 'Please wait...' : (isLogin ? 'Login' : 'Sign Up')}
-              </button>
+                {isLogin ? 'Login' : 'Sign Up'}
+              </Button>
             </form>
 
             <div className="auth-switch">
               <p>
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <button 
+                <Button 
                   type="button" 
-                  className="link-btn"
+                  variant="link"
                   onClick={switchAuthMode}
                 >
                   {isLogin ? 'Sign up here' : 'Login here'}
-                </button>
+                </Button>
               </p>
             </div>
           </div>

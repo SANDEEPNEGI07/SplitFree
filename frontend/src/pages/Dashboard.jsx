@@ -6,6 +6,7 @@ import { getGroupBalances } from '../services/settlements';
 import { getRecentActivity } from '../services/history';
 import { formatCurrency } from '../utils/helpers';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
+import Button from '../components/UI/Button';
 import './Pages.css';
 
 const Dashboard = () => {
@@ -227,27 +228,36 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="group-actions">
-                      <button 
-                        className="btn-small btn-outline"
+                      <Button 
+                        size="small"
+                        variant="outline"
                         onClick={() => navigate(`/group/${group.id}`)}
                       >
                         View
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="empty-state">
                   <p>No groups yet. Create your first group to start splitting expenses!</p>
-                  <a href="/groups" className="btn btn-primary">Create Group</a>
+                  <Button 
+                    variant="primary"
+                    onClick={() => navigate('/groups')}
+                  >
+                    Create Group
+                  </Button>
                 </div>
               )}
               
               {groups && groups.length > 5 && (
                 <div className="show-more">
-                  <a href="/groups" className="btn btn-outline">
-                    View All {totalGroups} Groups
-                  </a>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/groups')}
+                  >
+                    View All {groups.length} Groups
+                  </Button>
                 </div>
               )}
             </div>

@@ -6,6 +6,7 @@ import { getGroupHistory } from './services/history';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import LoadingSpinner from './components/UI/LoadingSpinner';
+import Button from './components/UI/Button';
 
 // Auth Components
 import Login from './components/Auth/Login';
@@ -82,12 +83,12 @@ const Groups = () => {
     <div className="container">
       <div className="page-header">
         <h1>Your Groups</h1>
-        <button 
-          className="btn btn-primary"
+        <Button 
+          variant="primary"
           onClick={() => setShowCreateForm(true)}
         >
           Create New Group
-        </button>
+        </Button>
       </div>
 
       {showCreateForm && (
@@ -95,7 +96,13 @@ const Groups = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Create New Group</h2>
-              <button onClick={() => setShowCreateForm(false)}>×</button>
+              <Button 
+                variant="link" 
+                onClick={() => setShowCreateForm(false)}
+                className="close-btn"
+              >
+                ×
+              </Button>
             </div>
             <form onSubmit={handleSubmit} className="modal-body">
               <div className="form-group">
@@ -118,7 +125,7 @@ const Groups = () => {
                   required
                 />
               </div>
-              <button type="submit" className="btn btn-primary">Create Group</button>
+              <Button type="submit" variant="primary">Create Group</Button>
             </form>
           </div>
         </div>
@@ -139,18 +146,18 @@ const Groups = () => {
                 <span>💰 ${(group.total_amount || 0).toFixed(2)}</span>
               </div>
               <div className="group-actions">
-                <button 
-                  className="btn btn-outline"
+                <Button 
+                  variant="outline"
                   onClick={() => navigate(`/group/${group.id}`)}
                 >
                   View Details
-                </button>
-                <button 
-                  className="btn btn-primary"
+                </Button>
+                <Button 
+                  variant="primary"
                   onClick={() => navigate(`/group/${group.id}`)}
                 >
                   Add Expense
-                </button>
+                </Button>
               </div>
             </div>
           ))
@@ -158,12 +165,12 @@ const Groups = () => {
           <div className="empty-state">
             <h2>No Groups Yet</h2>
             <p>Create your first group to start splitting expenses with friends!</p>
-            <button 
-              className="btn btn-primary"
+            <Button 
+              variant="primary"
               onClick={() => setShowCreateForm(true)}
             >
               Create Your First Group
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -244,24 +251,27 @@ const History = () => {
         <h1>History</h1>
         {selectedGroup && (
           <div className="history-filters">
-            <button
-              className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+            <Button
+              variant="filter"
+              active={filter === 'all'}
               onClick={() => setFilter('all')}
             >
               All Activity
-            </button>
-            <button
-              className={`filter-btn ${filter === 'expenses' ? 'active' : ''}`}
+            </Button>
+            <Button
+              variant="filter"
+              active={filter === 'expenses'}
               onClick={() => setFilter('expenses')}
             >
               Expenses
-            </button>
-            <button
-              className={`filter-btn ${filter === 'settlements' ? 'active' : ''}`}
+            </Button>
+            <Button
+              variant="filter"
+              active={filter === 'settlements'}
               onClick={() => setFilter('settlements')}
             >
               Settlements
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -294,12 +304,12 @@ const History = () => {
               <div className="empty-state">
                 <h3>No Groups Found</h3>
                 <p>You need to be part of a group to view history</p>
-                <button 
-                  className="btn btn-primary"
+                <Button 
+                  variant="primary"
                   onClick={() => navigate('/groups')}
                 >
                   Browse Groups
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -317,12 +327,12 @@ const History = () => {
                 <p>{selectedGroup.users?.length || 0} members</p>
               </div>
             </div>
-            <button 
-              className="btn btn-outline"
+            <Button 
+              variant="outline"
               onClick={() => setSelectedGroup(null)}
             >
               Change Group
-            </button>
+            </Button>
           </div>
 
           {/* History Timeline */}

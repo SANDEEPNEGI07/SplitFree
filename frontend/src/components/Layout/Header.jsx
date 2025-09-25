@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getInitials } from '../../utils/helpers';
+import Button from '../UI/Button';
 import './Layout.css';
 
 const Header = () => {
@@ -69,13 +70,14 @@ const Header = () => {
                 </span>
                 <span className="user-email">{user?.email}</span>
               </div>
-              <button 
+              <Button 
                 onClick={handleLogout}
-                className="logout-btn"
+                variant="danger"
+                size="small"
                 title="Logout"
               >
                 Log out
-              </button>
+              </Button>
             </div>
           </div>
         </div>

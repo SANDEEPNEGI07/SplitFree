@@ -201,7 +201,7 @@ const GroupDetails = () => {
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   return (
-    <div className="page-container">
+    <div className="page-container group-details-page">
       <div className="page-header">
         <div className="header-content">
           <Button 
@@ -268,15 +268,15 @@ const GroupDetails = () => {
                   <div key={user.id} className="member-card">
                     <div className="member-info">
                       <h4>{user.username}</h4>
-                      <p>{user.email}</p>
                       <p className={`balance ${balance > 0 ? 'positive' : balance < 0 ? 'negative' : 'neutral'}`}>
                         Balance: ${balance.toFixed(2)}
                       </p>
                     </div>
                     <Button 
-                      variant="danger" 
-                      size="small"
                       onClick={() => handleRemoveMember(user.id)}
+                      variant="danger"
+                      size="small"
+                      title="Remove"
                     >
                       Remove
                     </Button>

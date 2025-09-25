@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { isValidEmail, validateRequired } from '../../utils/helpers';
+import Button from '../UI/Button';
+import FormInput from '../UI/FormInput';
 import './Auth.css';
 
 const Login = () => {
@@ -85,55 +87,45 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`form-input ${validationErrors.email ? 'error' : ''}`}
-              placeholder="Enter your email"
-              autoComplete="email"
-            />
-            {validationErrors.email && (
-              <div className="error-message">{validationErrors.email}</div>
-            )}
-          </div>
+          <FormInput
+            label="Email"
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter your email"
+            autoComplete="email"
+            error={validationErrors.email}
+            required
+          />
 
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`form-input ${validationErrors.password ? 'error' : ''}`}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-            />
-            {validationErrors.password && (
-              <div className="error-message">{validationErrors.password}</div>
-            )}
-          </div>
+          <FormInput
+            label="Password"
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            error={validationErrors.password}
+            required
+          />
 
           {error && (
             <div className="error-message auth-error">{error}</div>
           )}
 
-          <button
+          <Button
             type="submit"
-            className="btn btn-primary"
+            variant="primary"
+            size="large"
             disabled={isSubmitting}
+            loading={isSubmitting}
           >
-            {isSubmitting ? 'Signing In...' : 'Sign In'}
-          </button>
+            {isSubmitting ? 'Signing In...' : 'Login'}
+          </Button>
         </form>
 
         <div className="auth-footer">

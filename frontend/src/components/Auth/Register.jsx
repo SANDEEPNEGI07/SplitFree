@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { isValidEmail, validateRequired } from '../../utils/helpers';
+import Button from '../UI/Button';
+import FormInput from '../UI/FormInput';
 import './Auth.css';
 
 const Register = () => {
@@ -106,93 +108,71 @@ const Register = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="username" className="form-label">
-              Username
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className={`form-input ${validationErrors.username ? 'error' : ''}`}
-              placeholder="Enter your username"
-              autoComplete="username"
-            />
-            {validationErrors.username && (
-              <div className="error-message">{validationErrors.username}</div>
-            )}
-          </div>
+          <FormInput
+            label="Username"
+            type="text"
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Enter your username"
+            autoComplete="username"
+            error={validationErrors.username}
+            required
+          />
 
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`form-input ${validationErrors.email ? 'error' : ''}`}
-              placeholder="Enter your email"
-              autoComplete="email"
-            />
-            {validationErrors.email && (
-              <div className="error-message">{validationErrors.email}</div>
-            )}
-          </div>
+          <FormInput
+            label="Email"
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter your email"
+            autoComplete="email"
+            error={validationErrors.email}
+            required
+          />
 
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`form-input ${validationErrors.password ? 'error' : ''}`}
-              placeholder="Enter your password"
-              autoComplete="new-password"
-            />
-            {validationErrors.password && (
-              <div className="error-message">{validationErrors.password}</div>
-            )}
-          </div>
+          <FormInput
+            label="Password"
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Enter your password"
+            autoComplete="new-password"
+            error={validationErrors.password}
+            required
+          />
 
-          <div className="form-group">
-            <label htmlFor="confirmPassword" className="form-label">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className={`form-input ${validationErrors.confirmPassword ? 'error' : ''}`}
-              placeholder="Confirm your password"
-              autoComplete="new-password"
-            />
-            {validationErrors.confirmPassword && (
-              <div className="error-message">{validationErrors.confirmPassword}</div>
-            )}
-          </div>
+          <FormInput
+            label="Confirm Password"
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            placeholder="Confirm your password"
+            autoComplete="new-password"
+            error={validationErrors.confirmPassword}
+            required
+          />
 
           {error && (
             <div className="error-message auth-error">{error}</div>
           )}
 
-          <button
+          <Button
             type="submit"
-            className="btn btn-primary"
+            variant="primary"
+            size="large"
             disabled={isSubmitting}
+            loading={isSubmitting}
           >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
-          </button>
+            {isSubmitting ? 'Creating Account...' : 'Sign Up'}
+          </Button>
         </form>
 
         <div className="auth-footer">

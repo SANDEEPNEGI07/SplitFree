@@ -7,12 +7,13 @@ const Button = ({
   size = 'medium', 
   disabled = false, 
   loading = false, 
+  active = false,
   onClick, 
   type = 'button',
   className = '',
   ...props 
 }) => {
-  const buttonClass = `btn btn-${variant} btn-${size} ${className} ${loading ? 'loading' : ''}`.trim();
+  const buttonClass = `btn btn-${variant} btn-${size} ${className} ${loading ? 'loading' : ''} ${active ? 'active' : ''}`.trim();
 
   return (
     <button
