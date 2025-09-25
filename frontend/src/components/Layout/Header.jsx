@@ -12,7 +12,7 @@ const Header = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate('/'); // Redirect to homepage instead of login
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -69,13 +69,12 @@ const Header = () => {
                 </span>
                 <span className="user-email">{user?.email}</span>
               </div>
-              {console.log('Header: Current user data:', user)}
               <button 
                 onClick={handleLogout}
                 className="logout-btn"
                 title="Logout"
               >
-                🚪
+                Log out
               </button>
             </div>
           </div>

@@ -12,6 +12,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 
 // Pages
+import Homepage from './pages/Homepage';
 import Dashboard from './pages/Dashboard';
 import GroupDetails from './pages/GroupDetails';
 
@@ -472,11 +473,18 @@ function App() {
               } 
             />
 
-            {/* Default Route */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Homepage Route */}
+            <Route 
+              path="/" 
+              element={
+                <PublicRoute>
+                  <Homepage />
+                </PublicRoute>
+              } 
+            />
             
             {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>

@@ -114,17 +114,34 @@
 }
 
 .logout-btn {
-  background: none;
-  border: none;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  color: #dc3545;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background 0.3s ease;
-  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .logout-btn:hover {
-  background: rgba(220, 53, 69, 0.1);
+  background: rgba(220, 53, 69, 0.2);
+  border-color: rgba(220, 53, 69, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+}
+
+.logout-icon {
+  font-size: 16px;
+}
+
+.logout-text {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* Footer Styles */
@@ -220,6 +237,16 @@
 
   .user-info {
     display: none;
+  }
+
+  .logout-btn .logout-text {
+    display: none;
+  }
+  
+  .logout-btn {
+    padding: 8px;
+    min-width: 40px;
+    justify-content: center;
   }
 
   .footer-content {
