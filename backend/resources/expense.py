@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from schemas import ExpenseSchema, ExpenseCreateSchema
 from db import db
 from models import ExpenseModel, GroupModel, ExpenseSplitModel, SettlementModel, GroupUserModel
+from utils.permissions import check_group_membership, check_expense_permission
 
 blp = Blueprint("Expense", __name__, description="Operations on expenses")
 
@@ -23,13 +24,7 @@ class GroupExpense(MethodView):
         current_user_id = int(get_jwt_identity())
         
         # Check if the user is a member of this group
-        group_user = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not group_user:
-            abort(403, message="Access denied. You are not a member of this group.")
+        check_group_membership(group_id, current_user_id)
 
         group = GroupModel.query.get_or_404(group_id)
         users = group.users
@@ -114,19 +109,14 @@ class ExpenseDetail(MethodView):
 
     @jwt_required()
     def delete(self, group_id, expense_id):
-        """Delete an expense and warn if settlements may be affected - only if user is a member."""
+        """Delete an expense and warn if settlements may be affected - only if user is admin or expense creator."""
         
         current_user_id = int(get_jwt_identity())
         
-        group_user = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not group_user:
-            abort(403, message="Access denied. You are not a member of this group.")
-        
         expense = ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()
+        
+        # Check if user can delete this expense (admin or expense creator)
+        check_expense_permission(expense, current_user_id)
         
         settlements_count = SettlementModel.query.filter_by(group_id=group_id).count()
         
@@ -146,12 +136,7 @@ class ExpenseDetail(MethodView):
         
         current_user_id = int(get_jwt_identity())
         
-        group_user = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not group_user:
-            abort(403, message="Access denied. You are not a member of this group.")
+        # Check if the user is a member of this group
+        check_group_membership(group_id, current_user_id)
         
         return ExpenseModel.query.filter_by(id=expense_id, group_id=group_id).first_or_404()

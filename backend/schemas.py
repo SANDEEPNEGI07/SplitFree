@@ -25,6 +25,10 @@ class UserIdSchema(Schema):
     username = fields.Str()
     email = fields.Email()
 
+class GroupMemberSchema(UserIdSchema):
+    """This Schema includes user info with admin status for group members"""
+    is_admin = fields.Bool(dump_only=True)
+
 class UserIdInputSchema(Schema):
     """This Schema takes input from the client"""
     user_id = fields.Int(required=True)

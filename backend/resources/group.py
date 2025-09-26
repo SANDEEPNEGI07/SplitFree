@@ -5,9 +5,11 @@ from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
-from schemas import GroupSchema, GroupCreateSchema, UserIdInputSchema
+from schemas import GroupSchema, GroupCreateSchema, UserIdInputSchema, GroupMemberSchema
 from db import db
 from models import GroupModel, GroupUserModel, UserModel, SettlementModel, ExpenseModel, ExpenseSplitModel
+from utils.permissions import check_group_membership, check_group_admin
+from resources.settlement import _compute_balances
 
 blp = Blueprint("Group", __name__, description="Operations on group")
 
@@ -47,7 +49,8 @@ class GroupList(MethodView):
         try:
             db.session.add(group)
             db.session.flush()
-            group_user = GroupUserModel(group_id=group.id, user_id=current_user_id)
+            # Make the group creator an admin
+            group_user = GroupUserModel(group_id=group.id, user_id=current_user_id, is_admin=True)
             db.session.add(group_user)
             
             db.session.commit()
@@ -68,37 +71,25 @@ class Group(MethodView):
     @jwt_required()
     @blp.response(200, GroupSchema)
     def get(self, group_id):
-        """Get group details by ID including all members - only if user is a member."""
+        """Get group details by ID including all members with admin status - only if user is a member."""
     
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
         # Check if the user is a member of this group
-        group_user = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not group_user:
-            abort(403, message="Access denied. You are not a member of this group.")
+        check_group_membership(group_id, current_user_id)
         
         return GroupModel.query.get_or_404(group_id)
 
     @jwt_required()
     def delete(self, group_id):
-        """Delete group permanently. Cannot delete if group has expenses or settlements. Only group members can delete."""
+        """Delete group permanently. Cannot delete if group has expenses or settlements. Only group admins can delete."""
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
-        # Check if the user is a member of this group
-        group_user = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not group_user:
-            abort(403, message="Access denied. You are not a member of this group.")
+        # Check if the user is an admin of this group
+        check_group_admin(group_id, current_user_id)
         
         group = GroupModel.query.get_or_404(group_id)
         
@@ -131,19 +122,13 @@ class UserToGroup(MethodView):
     @jwt_required()
     @blp.arguments(UserIdInputSchema)
     def post(self, user_data, group_id):
-        """Add a user to a group by user ID. Only group members can add users."""
+        """Add a user to a group by user ID. Only group admins can add users."""
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
-        # Check if the current user is a member of this group
-        current_user_in_group = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not current_user_in_group:
-            abort(403, message="Access denied. You are not a member of this group.")
+        # Check if the current user is an admin of this group
+        check_group_admin(group_id, current_user_id)
         
         user_id = user_data.get("user_id") 
         
@@ -177,53 +162,188 @@ class RemoveUserFromGroup(MethodView):
 
     @jwt_required()
     def delete(self, group_id, user_id):
-        """Remove a user from a group. Prevents removal if user has financial obligations. Only group members can remove users."""
+        """Remove a user from a group. Prevents removal if user has financial obligations. Only group admins can remove users."""
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
         
-        # Check if the current user is a member of this group
-        current_user_in_group = GroupUserModel.query.filter_by(
-            group_id=group_id, 
-            user_id=current_user_id
-        ).first()
-        
-        if not current_user_in_group:
-            abort(403, message="Access denied. You are not a member of this group.")
+        # Check if the current user is an admin of this group
+        check_group_admin(group_id, current_user_id)
         
         group_user = GroupUserModel.query.filter_by(group_id=group_id, user_id=user_id).first()
         if not group_user:
             abort(404, message="User not found in group")
         
+        # Check if admin is trying to remove themselves
+        if current_user_id == user_id:
+            # Check if they are the only member in the group
+            total_members = GroupUserModel.query.filter_by(group_id=group_id).count()
+            if total_members == 1:
+                abort(400, message="Cannot remove yourself from group. You are the only member. Delete the group instead.")
+            
+            # Check if they are the only admin in the group
+            admin_count = GroupUserModel.query.filter_by(group_id=group_id, is_admin=True).count()
+            if admin_count == 1 and group_user.is_admin:
+                abort(400, message="Cannot remove yourself from group. You are the only admin. Assign another admin first.")
+        
+        # Check if removing the only admin (when current user is not the one being removed)
+        elif group_user.is_admin:
+            admin_count = GroupUserModel.query.filter_by(group_id=group_id, is_admin=True).count()
+            if admin_count == 1:
+                abort(400, message="Cannot remove the only admin from group. Assign another admin first.")
+        
         # Check for financial constraints that prevent removal
-        constraints = []
-        
-        # Check if user has paid for any expenses in this group
-        paid_expenses = ExpenseModel.query.filter_by(group_id=group_id, paid_by=user_id).count()
-        if paid_expenses > 0:
-            constraints.append(f"has paid for {paid_expenses} expense(s) in this group")
-        
-        # Check if user has any expense splits in this group
-        user_splits = (ExpenseSplitModel.query
-                      .join(ExpenseModel)
-                      .filter(ExpenseModel.group_id == group_id, ExpenseSplitModel.user_id == user_id)
-                      .count())
-        if user_splits > 0:
-            constraints.append(f"has {user_splits} expense split(s) in this group")
-        
-        # Check if user is involved in any settlements in this group
-        settlements_as_payer = SettlementModel.query.filter_by(group_id=group_id, paid_by=user_id).count()
-        settlements_as_receiver = SettlementModel.query.filter_by(group_id=group_id, paid_to=user_id).count()
-        total_settlements = settlements_as_payer + settlements_as_receiver
-        if total_settlements > 0:
-            constraints.append(f"is involved in {total_settlements} settlement(s) in this group")
-        
-        if constraints:
-            constraint_text = ", ".join(constraints)
-            abort(400, message=f"Cannot remove user from group. User {constraint_text}. Please resolve these obligations first.")
+        try:
+            balances = _compute_balances(group_id)
+            user_balance = balances.get(user_id, 0.0)
+            
+            # Allow removal only if balance is zero (within a small tolerance for floating point precision)
+            if abs(user_balance) > 0.01:  # More than 1 cent difference
+                if user_balance > 0:
+                    abort(400, message=f"Cannot remove user from group. User is owed ${user_balance:.2f}. Please settle all balances first.")
+                else:
+                    abort(400, message=f"Cannot remove user from group. User owes ${abs(user_balance):.2f}. Please settle all balances first.")
+        except Exception as e:
+            # Fallback to old constraint checking if balance calculation fails
+            constraints = []
+            
+            # Check if user has unsettled expense splits
+            user_splits = (ExpenseSplitModel.query
+                          .join(ExpenseModel)
+                          .filter(ExpenseModel.group_id == group_id, ExpenseSplitModel.user_id == user_id)
+                          .count())
+            if user_splits > 0:
+                constraints.append(f"has {user_splits} unsettled expense split(s)")
+            
+            if constraints:
+                constraint_text = ", ".join(constraints)
+                abort(400, message=f"Cannot remove user from group. User {constraint_text}. Please settle all balances first.")
         
         db.session.delete(group_user)
         db.session.commit()
         return {"message": "User removed from group successfully"}, 200
+
+
+@blp.route("/group/<int:group_id>/members")
+class GroupMembers(MethodView):
+
+    @jwt_required()
+    @blp.response(200, GroupMemberSchema(many=True))
+    def get(self, group_id):
+        """Get all group members with their admin status - only if user is a member."""
+        
+        # Get the current logged-in user ID
+        current_user_id = int(get_jwt_identity())
+        
+        # Check if the user is a member of this group
+        check_group_membership(group_id, current_user_id)
+        
+        # Get all group members with admin status
+        group_users = db.session.query(
+            UserModel.id,
+            UserModel.username,
+            UserModel.email,
+            GroupUserModel.is_admin
+        ).join(
+            GroupUserModel, UserModel.id == GroupUserModel.user_id
+        ).filter(
+            GroupUserModel.group_id == group_id
+        ).all()
+        
+        # Convert to dictionary format for serialization
+        members = []
+        for user_id, username, email, is_admin in group_users:
+            members.append({
+                'id': user_id,
+                'username': username,
+                'email': email,
+                'is_admin': is_admin
+            })
+        
+        return members
+
+
+@blp.route("/group/<int:group_id>/admin")
+class GroupAdminManagement(MethodView):
+
+    @jwt_required()
+    @blp.arguments(UserIdInputSchema)
+    def post(self, user_data, group_id):
+        """Make a user admin of the group. Only existing group admins can do this."""
+        
+        # Get the current logged-in user ID
+        current_user_id = int(get_jwt_identity())
+        
+        # Check if the current user is an admin of this group
+        check_group_admin(group_id, current_user_id)
+        
+        user_id = user_data.get("user_id")
+        
+        # Check if target user is a member of this group
+        target_group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=user_id
+        ).first()
+        
+        if not target_group_user:
+            abort(404, message="User is not a member of this group")
+        
+        if target_group_user.is_admin:
+            abort(400, message="User is already an admin of this group")
+        
+        # Make user admin
+        target_group_user.is_admin = True
+        
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="An error occurred while updating admin status.")
+        
+        return {"message": "User has been made admin successfully"}, 200
+
+    @jwt_required()
+    @blp.arguments(UserIdInputSchema)
+    def delete(self, user_data, group_id):
+        """Remove admin privileges from a user. Only existing group admins can do this."""
+
+        current_user_id = int(get_jwt_identity())
+        
+        # Check if the current user is an admin of this group
+        check_group_admin(group_id, current_user_id)
+        
+        user_id = user_data.get("user_id")
+        
+        # Prevent user from removing their own admin privileges if they're the only admin
+        admin_count = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            is_admin=True
+        ).count()
+        
+        if admin_count == 1 and user_id == current_user_id:
+            abort(400, message="Cannot remove admin privileges. At least one admin must remain in the group.")
+        
+        # Check if target user is a member of this group
+        target_group_user = GroupUserModel.query.filter_by(
+            group_id=group_id, 
+            user_id=user_id
+        ).first()
+        
+        if not target_group_user:
+            abort(404, message="User is not a member of this group")
+        
+        if not target_group_user.is_admin:
+            abort(400, message="User is not an admin of this group")
+        
+        # Remove admin privileges
+        target_group_user.is_admin = False
+        
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(500, message="An error occurred while updating admin status.")
+        
+        return {"message": "Admin privileges removed successfully"}, 200
 
 
