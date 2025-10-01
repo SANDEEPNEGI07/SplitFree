@@ -4,7 +4,7 @@ services:
   # Backend Flask API
   backend:
     build: ./backend
-    container_name: splitwise-backend
+    container_name: splitfree-backend
     ports:
       - "5000:5000"
     environment:
@@ -14,14 +14,14 @@ services:
       - ./backend:/app
       - /app/__pycache__
     networks:
-      - splitwise-network
+      - splitfree-network
 
   # Frontend React App
   frontend:
     build: ./frontend
-    container_name: splitwise-frontend
+    container_name: splitfree-frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     environment:
       - REACT_APP_API_URL=http://backend:5000
     volumes:
@@ -30,8 +30,8 @@ services:
     depends_on:
       - backend
     networks:
-      - splitwise-network
+      - splitfree-network
 
 networks:
-  splitwise-network:
+  splitfree-network:
     driver: bridge
