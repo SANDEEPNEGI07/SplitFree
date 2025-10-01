@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to SplitFree</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #16A085, #2ECC71); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">Welcome to Splitwise!</h1>
+            <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Making expense sharing simple and fair</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 30px;">
+            <p style="color: #2c3e50; font-size: 18px; margin: 0 0 20px 0;">Hi <strong>{{ username }}</strong>,</p>
+            
+            <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
+                Welcome to <strong>SplitFree</strong>! We're excited to help you manage shared expenses with friends, family, and roommates. No more awkward conversations about who owes what!
+            </p>
+
+            <!-- Getting Started Section -->
+            <div style="background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 4px solid #16A085; margin: 25px 0;">
+                <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 20px;">🚀 Getting Started</h3>
+                <ul style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px;">
+                    <li><strong>Create groups</strong> for different expense categories (roommates, trips, dinners)</li>
+                    <li><strong>Invite friends</strong> to join your groups</li>
+                    <li><strong>Add expenses</strong> and split them fairly</li>
+                    <li><strong>Track balances</strong> and settle up when convenient</li>
+                    <li><strong>Stay organized</strong> with automatic calculations and notifications</li>
+                </ul>
+            </div>
+
+            <!-- Features Highlight -->
+            <div style="display: flex; margin: 25px 0;">
+                <div style="flex: 1; text-align: center; padding: 15px;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">💰</div>
+                    <p style="color: #16A085; font-weight: bold; margin: 0; font-size: 14px;">Smart Splitting</p>
+                </div>
+                <div style="flex: 1; text-align: center; padding: 15px;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
+                    <p style="color: #16A085; font-weight: bold; margin: 0; font-size: 14px;">Mobile Friendly</p>
+                </div>
+                <div style="flex: 1; text-align: center; padding: 15px;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🔔</div>
+                    <p style="color: #16A085; font-weight: bold; margin: 0; font-size: 14px;">Notifications</p>
+                </div>
+            </div>
+
+            <p style="color: #555; line-height: 1.6; margin: 25px 0;">
+                Ready to start splitting? Log in to your account and create your first group!
+            </p>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ frontend_url }}" style="display: inline-block; background: linear-gradient(135deg, #16A085, #2ECC71); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px;">Get Started Now</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+            <p style="color: #7f8c8d; margin: 0; font-size: 14px;">
+                Happy splitting! 🎉<br>
+                <strong>The SplitFree Team</strong>
+            </p>
+            <p style="color: #bdc3c7; margin: 10px 0 0 0; font-size: 12px;">
+                Making shared expenses stress-free since 2024
+            </p>
+        </div>
+    </div>
+</body>
+</html>

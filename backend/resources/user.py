@@ -1,4 +1,7 @@
 import uuid
+from flask import current_app
+from threading import Thread
+
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
 from passlib.hash import pbkdf2_sha256
@@ -6,13 +9,11 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jw
 
 from blocklist import BLOCKLIST
 
-from sqlalchemy import or_
-
-
 from schemas import UserSchema, UserLoginSchema
 from db import db
 
 from models import UserModel
+from tasks import user_registration_email
 
 blp = Blueprint("User", __name__, description="Opeartion on users")
 
@@ -32,6 +33,13 @@ class UserRegister(MethodView):
         )
         db.session.add(user)
         db.session.commit()
+
+        # Send welcome email (don't fail registration if email fails)
+        try:
+            user_registration_email(user.email, user.username)
+        except Exception as e:
+            # Log error but continue with registration
+            print(f"Failed to send welcome email: {e}")
 
         return {"message":"User created successfully"}, 201
 
