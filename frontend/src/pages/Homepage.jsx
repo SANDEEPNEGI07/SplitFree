@@ -1,69 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/UI/Button';
-import FormInput from '../components/UI/FormInput';
 import './Homepage.css';
 
 const Homepage = () => {
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
   const navigate = useNavigate();
-  const { login, register } = useAuth();
-
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      if (isLogin) {
-        // Login with email and password (backend expects email)
-        await login({ email: formData.email, password: formData.password });
-      } else {
-        // Signup with username, email, and password
-        await register({ username: formData.username, email: formData.email, password: formData.password });
-      }
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const openAuthModal = (type) => {
-    setIsLogin(type === 'login');
-    setShowAuthModal(true);
-    setError('');
-    setFormData({ username: '', email: '', password: '' });
-  };
-
-  const closeAuthModal = () => {
-    setShowAuthModal(false);
-    setError('');
-    setFormData({ username: '', email: '', password: '' });
-  };
-
-  const switchAuthMode = () => {
-    setIsLogin(!isLogin);
-    setError('');
-    setFormData({ username: '', email: '', password: '' });
+    if (type === 'login') {
+      navigate('/login');
+    } else {
+      navigate('/register');
+    }
   };
 
   return (
@@ -263,79 +211,7 @@ const Homepage = () => {
         </div>
       </footer>
 
-      {/* Authentication Modal */}
-      {showAuthModal && (
-        <div className="modal-overlay" onClick={closeAuthModal}>
-          <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{isLogin ? 'Welcome Back' : 'Join SplitFree'}</h2>
-              <button className="close-btn" onClick={closeAuthModal}>×</button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="auth-form">
-              {error && <div className="error-message">{error}</div>}
-              
-              {!isLogin && (
-                <FormInput
-                  label="Username"
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your username"
-                />
-              )}
 
-              <FormInput
-                label="Email"
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your email"
-              />
-
-              <FormInput
-                label="Password"
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                placeholder="Enter your password"
-              />
-
-              <Button 
-                type="submit" 
-                variant="primary"
-                className="btn-full"
-                disabled={loading}
-                loading={loading}
-              >
-                {isLogin ? 'Login' : 'Sign Up'}
-              </Button>
-            </form>
-
-            <div className="auth-switch">
-              <p>
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <Button 
-                  type="button" 
-                  variant="link"
-                  onClick={switchAuthMode}
-                >
-                  {isLogin ? 'Sign up here' : 'Login here'}
-                </Button>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

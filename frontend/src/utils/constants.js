@@ -41,9 +41,9 @@ export const HTTP_METHODS = {
 
 // Storage keys
 export const STORAGE_KEYS = {
-  ACCESS_TOKEN: 'splitwise_access_token',
-  REFRESH_TOKEN: 'splitwise_refresh_token',
-  USER_DATA: 'splitwise_user_data'
+  ACCESS_TOKEN: 'splitfree_access_token',
+  REFRESH_TOKEN: 'splitfree_refresh_token',
+  USER_DATA: 'splitfree_user_data'
 };
 
 export default API_BASE_URL;

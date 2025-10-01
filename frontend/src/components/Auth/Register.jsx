@@ -11,7 +11,6 @@ const Register = () => {
     username: '',
     email: '',
     password: '',
-    confirmPassword: '',
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,13 +66,7 @@ const Register = () => {
       errors.password = 'Password must be at least 6 characters long';
     }
 
-    // Confirm password validation
-    const confirmPasswordError = validateRequired(formData.confirmPassword, 'Confirm Password');
-    if (confirmPasswordError) {
-      errors.confirmPassword = confirmPasswordError;
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
+
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -88,8 +81,7 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      await register(formData);
       navigate('/dashboard');
     } catch (err) {
       // Error is handled by AuthContext
@@ -103,8 +95,9 @@ const Register = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
+          <Link to="/" className="home-link">← Back to Home</Link>
           <h1>Create Account</h1>
-          <p>Join Splitwise to split bills with friends</p>
+          <p>Join SplitFree to split bills with friends</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -141,22 +134,9 @@ const Register = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Enter your password"
+            placeholder="Enter your password (min. 6 characters)"
             autoComplete="new-password"
             error={validationErrors.password}
-            required
-          />
-
-          <FormInput
-            label="Confirm Password"
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            placeholder="Confirm your password"
-            autoComplete="new-password"
-            error={validationErrors.confirmPassword}
             required
           />
 

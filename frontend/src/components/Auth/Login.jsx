@@ -82,8 +82,9 @@ const Login = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
+          <Link to="/" className="home-link">← Back to Home</Link>
           <h1>Welcome Back</h1>
-          <p>Sign in to your Splitwise account</p>
+          <p>Sign in to your SplitFree account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

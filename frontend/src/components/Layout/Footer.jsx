@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="container">
         <div className="footer-content">
           <div className="footer-left">
-            <p>&copy; 2024 Splitwise Clone. Built with React & Flask.</p>
+            <p>&copy; 2025 SplitFree. Making expense splitting effortless.</p>
           </div>
           <div className="footer-right">
             <p>Made with ❤️ for splitting bills</p>

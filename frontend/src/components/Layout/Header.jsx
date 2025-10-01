@@ -34,7 +34,7 @@ const Header = () => {
           <div className="header-left">
             <Link to="/dashboard" className="logo">
               <span className="logo-icon">💰</span>
-              <span className="logo-text">Splitwise</span>
+              <span className="logo-text">SplitFree</span>
             </Link>
           </div>
 
