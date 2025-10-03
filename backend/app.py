@@ -23,10 +23,20 @@ def create_app(db_url = None):
     app = Flask(__name__)
     load_dotenv()
 
-    connection = redis.from_url(
-        os.getenv("REDIS_URL")
-    )
-    app.queue = Queue(name="emails", connection=connection)
+    # Setup Redis Queue for background jobs (optional - for local dev with Redis)
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            connection = redis.from_url(redis_url)
+            connection.ping()  # Test connection
+            app.queue = Queue(name="emails", connection=connection)
+            app.logger.info("✅ Redis queue initialized for background jobs")
+        except Exception as e:
+            app.logger.warning(f"⚠️  Redis unavailable, emails will be sent synchronously: {e}")
+            app.queue = None
+    else:
+        app.queue = None
+        app.logger.info("ℹ️  No REDIS_URL set, emails will be sent synchronously")
 
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "SplitFree REST API"

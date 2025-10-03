@@ -35,9 +35,14 @@ class UserRegister(MethodView):
         db.session.commit()
 
         try:
-            current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
+            # Async: Send email with redis
+            if hasattr(current_app, 'queue') and current_app.queue:
+                current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
+            else:
+                # Sync: Send email directly
+                send_user_registration_email(user.email, user.username)
         except Exception as e:
-            raise Exception(f"Failed to send email: {str(e)}")
+            current_app.logger.error(f"Failed to send welcome email: {str(e)}")
 
         return {"message":"User created successfully"}, 201
 
