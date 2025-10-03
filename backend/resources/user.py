@@ -13,7 +13,7 @@ from schemas import UserSchema, UserLoginSchema
 from db import db
 
 from models import UserModel
-from tasks import user_registration_email
+from tasks import send_user_registration_email
 
 blp = Blueprint("User", __name__, description="Opeartion on users")
 
@@ -34,12 +34,10 @@ class UserRegister(MethodView):
         db.session.add(user)
         db.session.commit()
 
-        # Send welcome email (don't fail registration if email fails)
         try:
-            user_registration_email(user.email, user.username)
+            current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
         except Exception as e:
-            # Log error but continue with registration
-            print(f"Failed to send welcome email: {e}")
+            raise Exception(f"Failed to send email: {str(e)}")
 
         return {"message":"User created successfully"}, 201
 

@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
 import redis
-from threading import Thread
-from queue import Queue
+from rq import Queue
 
 from flask import Flask, request, jsonify
 from flask_smorest import abort, Api
@@ -23,6 +22,11 @@ from resources.history import blp as HistoryBlueprint
 def create_app(db_url = None):
     app = Flask(__name__)
     load_dotenv()
+
+    connection = redis.from_url(
+        os.getenv("REDIS_URL")
+    )
+    app.queue = Queue(name="emails", connection=connection)
 
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "SplitFree REST API"
@@ -45,50 +49,15 @@ def create_app(db_url = None):
     }
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url or os.getenv("DATABASE_URL", "sqlite:///data.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # Email Queue Setup (Redis optional, threading fallback)
-    redis_url = os.getenv("REDIS_URL")
-    if redis_url:
-        try:
-            redis_conn = redis.from_url(redis_url)
-            redis_conn.ping()
-            app.redis = redis_conn
-        except Exception as e:
-            app.redis = None
-    else:
-        app.redis = None
-    
-    # Simple in-memory queue for email processing
-    app.email_queue = Queue()
-    app.email_thread_running = False
-
-    def process_email_queue():
-        """Process emails from the queue in background thread."""
-        while True:
-            try:
-                email_task = app.email_queue.get(timeout=1)
-                if email_task is None:  # Shutdown signal
-                    break
-                    
-                func, args, kwargs = email_task
-                func(*args, **kwargs)
-                app.email_queue.task_done()
-                
-            except Exception as queue_error:
-                # Log queue processing errors but continue running
-                if hasattr(app, 'logger'):
-                    app.logger.error(f"Email queue processing error: {queue_error}")
-                continue
-    
-    app.process_email_queue = process_email_queue
     
     db.init_app(app)
     migrate = Migrate(app, db)
     
     # Enable CORS for frontend communication
     allowed_origins = [
-        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+        os.getenv("FRONTEND_URL", "http://127.0.0.1:5000/swagger-ui"),
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "https://splitwise-api-frontend.onrender.com"
     ]
     CORS(app, 
