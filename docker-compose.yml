@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  # Redis for background job queue
+  redis:
+    image: redis:7-alpine
+    container_name: splitfree-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - splitfree-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
   # Backend Flask API
   backend:
     build: ./backend
@@ -10,20 +24,43 @@ services:
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./backend:/app
       - /app/__pycache__
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - splitfree-network
+
+  # RQ Worker for processing email queue
+  worker:
+    build: ./backend
+    container_name: splitfree-worker
+    command: rq worker --url redis://redis:6379/0 emails
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
     networks:
       - splitfree-network
 
   # Frontend React App
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - REACT_APP_API_URL=http://localhost:5000
     container_name: splitfree-frontend
     ports:
       - "3000:80"
-    environment:
-      - REACT_APP_API_URL=http://backend:5000
     volumes:
       - ./frontend:/app
       - /app/node_modules
