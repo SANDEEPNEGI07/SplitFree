@@ -47,7 +47,7 @@ def send_email_with_gmail(to_email, subject, html_content, plain_text):
         message.attach(part2)
         
         context = ssl.create_default_context()
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
             server.ehlo()
             server.starttls(context=context)
             server.ehlo()
@@ -57,6 +57,12 @@ def send_email_with_gmail(to_email, subject, html_content, plain_text):
         logger.info(f"Gmail email sent successfully to {to_email}")
         return {"status": "success", "message": "Email sent successfully via Gmail"}
         
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"Gmail authentication failed for {to_email}: {str(e)}")
+        return {"status": "error", "message": "Gmail authentication failed - check credentials"}
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP error sending to {to_email}: {str(e)}")
+        return {"status": "error", "message": f"SMTP error: {str(e)}"}
     except Exception as e:
         logger.error(f"Failed to send Gmail email to {to_email}: {str(e)}")
         return {"status": "error", "message": f"Gmail SMTP error: {str(e)}"}
