@@ -37,12 +37,18 @@ class UserRegister(MethodView):
         try:
             # Async: Send email with redis
             if hasattr(current_app, 'queue') and current_app.queue:
-                current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
+                job = current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
+                current_app.logger.info(f"Email job enqueued for {user.email}: {job.id}")
             else:
                 # Sync: Send email directly
-                send_user_registration_email(user.email, user.username)
+                email_result = send_user_registration_email(user.email, user.username)
+                current_app.logger.info(f"Direct email result for {user.email}: {email_result}")
+                
+                if email_result.get("status") == "error":
+                    current_app.logger.error(f"Email sending failed: {email_result.get('message')}")
+                    
         except Exception as e:
-            current_app.logger.error(f"Failed to send welcome email: {str(e)}")
+            current_app.logger.error(f"Failed to send welcome email to {user.email}: {str(e)}")
 
         return {"message":"User created successfully"}, 201
 
