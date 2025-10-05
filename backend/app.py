@@ -19,6 +19,9 @@ from resources.expense import blp as ExpenseBlueprint
 from resources.settlement import blp as SettlementBlueprint
 from resources.history import blp as HistoryBlueprint
 
+# Global variable to track worker thread status
+worker_thread_started = False
+
 
 def create_app(db_url = None):
     app = Flask(__name__)
@@ -48,6 +51,23 @@ def create_app(db_url = None):
         except Exception as e:
             if hasattr(app, 'logger'):
                 app.logger.error(f"RQ worker failed: {e}")
+    
+    @app.before_request
+    def start_worker_thread():
+        global worker_thread_started
+        if not worker_thread_started and hasattr(app, 'redis_connection') and app.redis_connection:
+            try:
+                worker_thread = Thread(target=app.run_worker, daemon=True)
+                worker_thread.start()
+                worker_thread_started = True
+                app.logger.info("✅ Background worker thread started successfully")
+            except Exception as e:
+                app.logger.error(f"Failed to start background worker: {e}")
+        
+        # Remove this function after first execution to avoid repeated checks
+        if worker_thread_started or not (hasattr(app, 'redis_connection') and app.redis_connection):
+            app.before_request_funcs[None].remove(start_worker_thread)
+
     
     # Store worker function for later use
     app.run_worker = run_worker
@@ -181,6 +201,7 @@ def create_app(db_url = None):
             
         return jsonify(status)
 
+   
     api.register_blueprint(GroupBlueprint)
     api.register_blueprint(UserBlueprint)
     api.register_blueprint(ExpenseBlueprint)
@@ -191,12 +212,3 @@ def create_app(db_url = None):
 
 # Create app instance for Gunicorn
 app = create_app()
-
-# Start RQ worker thread if Redis is available
-if hasattr(app, 'redis_connection') and app.redis_connection:
-    worker_thread = Thread(target=app.run_worker)
-    worker_thread.daemon = True  # Dies when main process dies
-    worker_thread.start()
-    print("✅ In-app RQ worker started successfully")
-else:
-    print("ℹ️  No Redis available, emails will be processed synchronously")

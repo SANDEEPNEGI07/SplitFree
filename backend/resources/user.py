@@ -1,4 +1,4 @@
-import threading
+import uuid
 from flask import current_app
 from threading import Thread
 
@@ -34,34 +34,24 @@ class UserRegister(MethodView):
         db.session.add(user)
         db.session.commit()
 
-        # Send welcome email asynchronously (non-blocking)
-        def send_welcome_email():
-            try:
-                # Try Redis queue first
-                if hasattr(current_app, 'queue') and current_app.queue:
-                    job = current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
-                    current_app.logger.info(f"Email job enqueued for {user.email}: {job.id}")
-                else:
-                    # Fallback: Send in background thread to avoid blocking
-                    
-                    email_thread = threading.Thread(
-                        target=lambda: send_user_registration_email(user.email, user.username),
-                        daemon=True
-                    )
-                    email_thread.start()
-                    current_app.logger.info(f"Email thread started for {user.email}")
-                    
-            except Exception as e:
-                current_app.logger.error(f"Failed to initiate welcome email for {user.email}: {str(e)}")
-
-        # Execute email sending without blocking the response
         try:
-            send_welcome_email()
+            current_app.logger.info(f"🚀 Starting email process for {user.email}")
+            
+            # Force direct email sending for now (Redis threading issues in Docker)
+            current_app.logger.info(f"📧 Using direct email sending for {user.email}")
+            email_result = send_user_registration_email(user.email, user.username)
+            current_app.logger.info(f"📧 Direct email result for {user.email}: {email_result}")
+            
+            if email_result.get("status") == "error":
+                current_app.logger.error(f"❌ Email sending failed: {email_result.get('message')}")
+            else:
+                current_app.logger.info(f"✅ Email sent successfully to {user.email}")
+                    
         except Exception as e:
-            # Log error but don't fail the registration
-            current_app.logger.error(f"Email system error for {user.email}: {str(e)}")
+            current_app.logger.error(f"💥 Failed to send welcome email to {user.email}: {str(e)}")
+            import traceback
+            current_app.logger.error(f"💥 Full traceback: {traceback.format_exc()}")
 
-        # Return success immediately, regardless of email status
         return {"message":"User created successfully"}, 201
 
 @blp.route("/login")

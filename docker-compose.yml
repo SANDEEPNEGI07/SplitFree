@@ -21,6 +21,8 @@ services:
     container_name: splitfree-backend
     ports:
       - "5000:5000"
+    env_file:
+      - ./backend/.env
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
