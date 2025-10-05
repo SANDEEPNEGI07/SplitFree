@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 import redis
-from rq import Queue
+from rq import Queue, Worker
+from threading import Thread
 
 from flask import Flask, request, jsonify
 from flask_smorest import abort, Api
@@ -23,20 +24,33 @@ def create_app(db_url = None):
     app = Flask(__name__)
     load_dotenv()
 
-    # Setup Redis Queue for background jobs (optional - for local dev with Redis)
+    # Setup Redis Queue for background jobs
     redis_url = os.getenv("REDIS_URL")
     if redis_url:
         try:
             connection = redis.from_url(redis_url)
-            connection.ping()  # Test connection
+            connection.ping()
             app.queue = Queue(name="emails", connection=connection)
-            app.logger.info("✅ Redis queue initialized for background jobs")
+            app.redis_connection = connection
         except Exception as e:
-            app.logger.warning(f"⚠️  Redis unavailable, emails will be sent synchronously: {e}")
             app.queue = None
+            app.redis_connection = None
     else:
         app.queue = None
-        app.logger.info("ℹ️  No REDIS_URL set, emails will be sent synchronously")
+        app.redis_connection = None
+    
+    # In-app RQ worker function - doesn't need a separate Bg worker
+    def run_worker():
+        """Background worker that runs in the same process"""
+        try:
+            worker = Worker(['emails'], connection=app.redis_connection)
+            worker.work(with_scheduler=True)
+        except Exception as e:
+            if hasattr(app, 'logger'):
+                app.logger.error(f"RQ worker failed: {e}")
+    
+    # Store worker function for later use
+    app.run_worker = run_worker
 
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "SplitFree REST API"
@@ -143,6 +157,30 @@ def create_app(db_url = None):
             401
         )
 
+    # Health check endpoint
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint with worker and Redis status"""
+        status = {
+            "status": "healthy",
+            "redis_available": bool(app.redis_connection),
+            "queue_available": bool(app.queue),
+            "email_mode": "async" if app.queue else "sync"
+        }
+        
+        # Test Redis connection if available
+        if app.redis_connection:
+            try:
+                app.redis_connection.ping()
+                status["redis_status"] = "connected"
+            except:
+                status["redis_status"] = "disconnected"
+                status["redis_available"] = False
+        else:
+            status["redis_status"] = "not_configured"
+            
+        return jsonify(status)
+
     api.register_blueprint(GroupBlueprint)
     api.register_blueprint(UserBlueprint)
     api.register_blueprint(ExpenseBlueprint)
@@ -153,3 +191,12 @@ def create_app(db_url = None):
 
 # Create app instance for Gunicorn
 app = create_app()
+
+# Start RQ worker thread if Redis is available
+if hasattr(app, 'redis_connection') and app.redis_connection:
+    worker_thread = Thread(target=app.run_worker)
+    worker_thread.daemon = True  # Dies when main process dies
+    worker_thread.start()
+    print("✅ In-app RQ worker started successfully")
+else:
+    print("ℹ️  No Redis available, emails will be processed synchronously")
