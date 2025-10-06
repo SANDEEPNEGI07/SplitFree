@@ -19,13 +19,17 @@ SplitFree simplifies expense management for groups by automatically calculating 
 |---------|-------------|
 | 🔐 **Authentication** | Secure login/signup with JWT tokens |
 | 👥 **Group Management** | Create groups, add/remove members |
-| 💳 **Expense Tracking** | Add expenses, automatic equal splitting |
+| � **Group Invitations** | Invite members via email or shareable codes |
+| 🔗 **Invite Codes** | Generate SPLIT-ABC123 format codes for easy joining |
+| �💳 **Expense Tracking** | Add expenses, automatic equal splitting |
 | 💰 **Balance Calculation** | Real-time who-owes-whom calculations |
 | 📊 **Settlement System** | Record payments between members |
 | 📱 **Responsive Design** | Works on desktop and mobile |
 
 - 👥 **Create Groups** - Organize expenses with roommates, friends, or travel buddies
-- 💳 **Add Expenses** - Record shared costs and automatically split them equally
+- � **Invite Members** - Send email invitations or share SPLIT-ABC123 codes
+- 🔓 **Public/Private Groups** - Control group visibility and joining methods
+- �💳 **Add Expenses** - Record shared costs and automatically split them equally
 - 💰 **Track Balances** - See who owes what at a glance
 - 📊 **Settle Up** - Record payments and keep balances updated
 - 🔒 **Stay Secure** - JWT authentication keeps your data safe

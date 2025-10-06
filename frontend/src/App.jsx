@@ -7,6 +7,7 @@ import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import LoadingSpinner from './components/UI/LoadingSpinner';
 import Button from './components/UI/Button';
+import JoinGroup from './components/Groups/JoinGroup';
 
 // Auth Components
 import Login from './components/Auth/Login';
@@ -16,6 +17,7 @@ import Register from './components/Auth/Register';
 import Homepage from './pages/Homepage';
 import Dashboard from './pages/Dashboard';
 import GroupDetails from './pages/GroupDetails';
+import AcceptInvitation from './pages/AcceptInvitation';
 
 import './App.css';
 
@@ -62,16 +64,35 @@ const Groups = () => {
   const navigate = useNavigate();
   const { groups, loading, createGroup } = useGroups();
   const [showCreateForm, setShowCreateForm] = React.useState(false);
-  const [formData, setFormData] = React.useState({ name: '', description: '' });
+  const [showJoinForm, setShowJoinForm] = React.useState(false);
+  const [formData, setFormData] = React.useState({ 
+    name: '', 
+    description: '', 
+    is_public: true 
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('=== FORM SUBMISSION STARTED ===');
+    console.log('Form submitted with data:', formData);
+    
+    // Validate form data
+    if (!formData.name || !formData.description) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
     try {
-      await createGroup(formData);
-      setFormData({ name: '', description: '' });
+      console.log('Calling createGroup with data:', formData);
+      const result = await createGroup(formData);
+      console.log('Group creation result:', result);
+      setFormData({ name: '', description: '', is_public: true });
       setShowCreateForm(false);
+      alert('Group created successfully!');
     } catch (error) {
       console.error('Error creating group:', error);
+      console.error('Error details:', error.response?.data);
+      alert('Error creating group: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -83,12 +104,20 @@ const Groups = () => {
     <div className="container">
       <div className="page-header">
         <h1>Your Groups</h1>
-        <Button 
-          variant="primary"
-          onClick={() => setShowCreateForm(true)}
-        >
-          Create New Group
-        </Button>
+        <div className="header-actions">
+          <Button 
+            variant="secondary"
+            onClick={() => setShowJoinForm(true)}
+          >
+            Join Group
+          </Button>
+          <Button 
+            variant="primary"
+            onClick={() => setShowCreateForm(true)}
+          >
+            Create New Group
+          </Button>
+        </div>
       </div>
 
       {showCreateForm && (
@@ -125,10 +154,48 @@ const Groups = () => {
                   required
                 />
               </div>
-              <Button type="submit" variant="primary">Create Group</Button>
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_public}
+                    onChange={(e) => setFormData({...formData, is_public: e.target.checked})}
+                  />
+                  <span className="checkbox-text">
+                    Public Group (anyone with group code can join)
+                  </span>
+                </label>
+                <small className="form-help">
+                  Private groups require email invitations to join
+                </small>
+              </div>
+              <div className="form-actions">
+                <Button 
+                  type="submit" 
+                  variant="primary"
+                  onClick={(e) => {
+                    console.log('Create Group button clicked!');
+                    console.log('Form data at click:', formData);
+                  }}
+                >
+                  Create Group
+                </Button>
+              </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* Join Group Modal */}
+      {showJoinForm && (
+        <JoinGroup 
+          onClose={() => setShowJoinForm(false)}
+          onGroupJoined={() => {
+            setShowJoinForm(false);
+            // Refresh groups to show the newly joined group
+            window.location.reload();
+          }}
+        />
       )}
 
       <div className="groups-grid">
@@ -479,6 +546,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <History />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Invitation Route */}
+            <Route 
+              path="/invite/:token" 
+              element={
+                <ProtectedRoute>
+                  <AcceptInvitation />
                 </ProtectedRoute>
               } 
             />

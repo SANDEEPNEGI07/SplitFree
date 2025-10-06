@@ -38,15 +38,49 @@ class GroupCreateSchema(Schema):
     """This Group schema will create groups"""
     name = fields.Str(required=True)
     description = fields.Str(required=True)
+    is_public = fields.Bool(load_default=True)
 
 class GroupSchema(GroupCreateSchema):
     """This Group Schema will add the users to the Group"""
     id = fields.Int(dump_only=True)
+    invite_code = fields.Str(dump_only=True)
+    is_public = fields.Bool(dump_only=True)
     users = fields.List(fields.Nested(UserIdSchema), dump_only=True)
 
     class Meta:
         ordered = True
-        fields = ("id", "name", "description", "users")
+        fields = ("id", "name", "description", "invite_code", "is_public", "users")
+
+class GroupInviteEmailSchema(Schema):
+    """Schema for sending email invitations to join a group"""
+    email = fields.Email(required=True)
+    message = fields.Str(load_default="", allow_none=True)  # Optional personal message
+
+class GroupJoinByCodeSchema(Schema):
+    """Schema for joining a group using invite code"""
+    invite_code = fields.Str(required=True)
+
+class GroupInvitationSchema(Schema):
+    """Schema for group invitation details"""
+    id = fields.Int(dump_only=True)
+    email = fields.Email(dump_only=True)
+    invite_token = fields.Str(dump_only=True)
+    expires_at = fields.DateTime(dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
+    used_at = fields.DateTime(dump_only=True, allow_none=True)
+    is_expired = fields.Bool(dump_only=True)
+    is_used = fields.Bool(dump_only=True)
+    is_valid = fields.Bool(dump_only=True)
+    invited_by = fields.Nested(UserIdSchema, dump_only=True)
+
+class GroupCodeInfoSchema(Schema):
+    """Schema for group information when looking up by code"""
+    id = fields.Int(dump_only=True)
+    name = fields.Str(dump_only=True)
+    description = fields.Str(dump_only=True)
+    invite_code = fields.Str(dump_only=True)
+    member_count = fields.Int(dump_only=True)
+    is_public = fields.Bool(dump_only=True)
 
 # Expense realted Schema
 class ExpenseSplitSchema(Schema):

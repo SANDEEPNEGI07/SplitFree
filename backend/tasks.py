@@ -84,3 +84,67 @@ def send_user_registration_email(email, username):
     except Exception as e:
         logger.error(f"Failed to send registration email to {email}: {str(e)}")
         return {"status": "error", "message": str(e)}
+
+
+def send_group_invitation_email(email, group_name, group_description, invited_by_name, 
+                               member_count, invite_token, group_invite_code, 
+                               expires_at, join_url):
+    """
+    Send group invitation email with both email token and group code
+    """
+    try:
+        # Format expiration date
+        formatted_expires = expires_at.strftime("%B %d, %Y at %I:%M %p UTC")
+        
+        # Render HTML template
+        html_content = render_template("emails/group_invitation.html",
+            group_name=group_name,
+            group_description=group_description,
+            invited_by_name=invited_by_name,
+            member_count=member_count,
+            expires_at=formatted_expires,
+            join_url=join_url,
+            group_invite_code=group_invite_code
+        )
+        
+        # Plain text version
+        plain_text = f"""
+You're Invited to Join {group_name} on SplitFree!
+
+{invited_by_name} has invited you to join their SplitFree group:
+
+Group: {group_name}
+Description: {group_description}
+Members: {member_count} people
+
+To join, either:
+1. Click this link: {join_url}
+2. Or use group code: {group_invite_code}
+
+This invitation expires on {formatted_expires}.
+
+What is SplitFree?
+SplitFree helps groups track shared expenses and settle debts easily.
+
+© 2025 SplitFree - Making expense splitting simple
+        """.strip()
+        
+        subject = f"You're invited to join '{group_name}' on SplitFree!"
+        
+        result = send_email_with_gmail(
+            email,
+            subject,
+            html_content,
+            plain_text
+        )
+        
+        if result["status"] == "success":
+            logger.info(f"Group invitation sent successfully to {email} for group {group_name}")
+        else:
+            logger.error(f"Failed to send group invitation to {email}: {result['message']}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to send group invitation to {email}: {str(e)}")
+        return {"status": "error", "message": str(e)}

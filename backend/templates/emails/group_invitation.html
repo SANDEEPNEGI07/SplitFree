@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Invited to Join {{ group_name }} on SplitFree!</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .invitation-card {
+            background: #f8f9ff;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .group-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 8px;
+        }
+        .group-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .invite-details {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .join-button {
+            display: inline-block;
+            background: #28a745;
+            color: white !important;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .join-button:hover {
+            background: #218838;
+        }
+        .alternative-method {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .invite-code {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            border: 2px dashed #007bff;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .expires {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+            .join-button { display: block; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">💸 SplitFree</div>
+            <h1>You're Invited to Join a Group!</h1>
+        </div>
+
+        <div class="invitation-card">
+            <div class="group-name">{{ group_name }}</div>
+            <div class="group-description">{{ group_description }}</div>
+            
+            <div class="invite-details">
+                <strong>Invited by:</strong> {{ invited_by_name }}<br>
+                <strong>Group Members:</strong> {{ member_count }} people<br>
+                <strong>Invitation expires:</strong> <span class="expires">{{ expires_at }}</span>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="{{ join_url }}" class="join-button">
+                    🚀 Join Group Now
+                </a>
+            </div>
+        </div>
+
+        <div class="alternative-method">
+            <h3>Alternative: Join with Group Code</h3>
+            <p>If the button doesn't work, you can also join using this group code:</p>
+            <div class="invite-code">{{ group_invite_code }}</div>
+            <p style="font-size: 14px; color: #666;">
+                1. Log in to SplitFree<br>
+                2. Go to "Join Group"<br>
+                3. Enter the code above
+            </p>
+        </div>
+
+        <div class="footer">
+            <h3>What is SplitFree?</h3>
+            <p>SplitFree helps groups track shared expenses and settle debts easily. Split bills, track who owes what, and get notifications when it's time to pay up!</p>
+            
+            <p><strong>Key Features:</strong></p>
+            <ul>
+                <li>📱 Easy expense tracking</li>
+                <li>💰 Automatic debt calculations</li>
+                <li>📧 Payment reminders</li>
+                <li>📊 Spending insights</li>
+            </ul>
+
+            <p style="margin-top: 20px;">
+                <small>
+                    This invitation will expire in 7 days. If you don't have a SplitFree account, you'll be prompted to create one when you join.
+                </small>
+            </p>
+            
+            <p style="text-align: center; margin-top: 20px;">
+                <small style="color: #999;">
+                    © 2025 SplitFree - Making expense splitting simple
+                </small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

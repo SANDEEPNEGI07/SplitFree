@@ -87,3 +87,52 @@ export const getUserById = async (userId) => {
     throw error;
   }
 };
+
+// Send email invitation to join group
+export const sendGroupInvitation = async (groupId, email, message = '') => {
+  try {
+    const response = await api.post(`/group/${groupId}/invite-email`, {
+      email,
+      message
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending group invitation:', error);
+    throw error;
+  }
+};
+
+// Join group using invite code
+export const joinGroupByCode = async (inviteCode) => {
+  try {
+    const response = await api.post('/group/join-by-code', {
+      invite_code: inviteCode
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error joining group by code:', error);
+    throw error;
+  }
+};
+
+// Get group info by invite code (public endpoint)
+export const getGroupByCode = async (inviteCode) => {
+  try {
+    const response = await api.get(`/group/code/${inviteCode}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching group by code:', error);
+    throw error;
+  }
+};
+
+// Accept email invitation
+export const acceptInvitation = async (inviteToken) => {
+  try {
+    const response = await api.get(`/invite/${inviteToken}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error accepting invitation:', error);
+    throw error;
+  }
+};

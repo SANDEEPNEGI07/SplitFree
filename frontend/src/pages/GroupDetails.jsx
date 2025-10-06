@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/UI/LoadingSpinner';
 import Modal from '../components/UI/Modal';
 import Button from '../components/UI/Button';
 import UserSearch from '../components/UI/UserSearch';
+import GroupInvite from '../components/Groups/GroupInvite';
 
 const GroupDetails = () => {
   const { groupId } = useParams();
@@ -21,6 +22,7 @@ const GroupDetails = () => {
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
     amount: '',
     description: '',
@@ -217,6 +219,12 @@ const GroupDetails = () => {
           </div>
         </div>
         <div className="header-actions">
+          <Button 
+            onClick={() => setShowInviteModal(true)}
+            variant="outline"
+          >
+            Invite Members
+          </Button>
           <Button 
             onClick={() => {
               console.log('Add Member button clicked!');
@@ -517,6 +525,19 @@ const GroupDetails = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Group Invite Modal */}
+      {showInviteModal && (
+        <GroupInvite 
+          group={currentGroup} 
+          onClose={() => setShowInviteModal(false)}
+          onInviteSent={() => {
+            setShowInviteModal(false);
+            // Optionally refresh group data to get updated member count
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 };
