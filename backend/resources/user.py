@@ -37,7 +37,6 @@ class UserRegister(MethodView):
         try:
             current_app.logger.info(f"🚀 Starting email process for {user.email}")
             
-            # Force direct email sending for now (Redis threading issues in Docker)
             current_app.logger.info(f"📧 Using direct email sending for {user.email}")
             email_result = send_user_registration_email(user.email, user.username)
             current_app.logger.info(f"📧 Direct email result for {user.email}: {email_result}")
@@ -62,7 +61,6 @@ class UserLogin(MethodView):
         email = user_data["email"]
         password = user_data["password"]
         
-        # Find user by email (unique identifier)
         user = UserModel.query.filter(UserModel.email == email).first()
 
         if user and pbkdf2_sha256.verify(password, user.password):
