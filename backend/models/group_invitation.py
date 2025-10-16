@@ -1,6 +1,7 @@
 from db import db
 from datetime import datetime, timedelta
 import uuid
+from config import INVITATION_EXPIRY_DAYS, INVITATION_EXPIRY_HOURS, INVITATION_EXPIRY_MINUTES
 
 
 class GroupInvitationModel(db.Model):
@@ -25,8 +26,12 @@ class GroupInvitationModel(db.Model):
         self.email = email.lower().strip()  # Normalize email
         self.invited_by_user_id = invited_by_user_id
         self.invite_token = str(uuid.uuid4())
-        # Invitations expire after 7 days
-        self.expires_at = datetime.utcnow() + timedelta(days=7)
+        # Calculate expiration from config (no migration needed to change duration)
+        self.expires_at = datetime.utcnow() + timedelta(
+            days=INVITATION_EXPIRY_DAYS,
+            hours=INVITATION_EXPIRY_HOURS,
+            minutes=INVITATION_EXPIRY_MINUTES
+        )
     
     @property
     def is_expired(self):

@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
 import redis
-from rq import Queue, Worker
-from threading import Thread
+from rq import Queue
 
 from flask import Flask, request, jsonify
 from flask_smorest import abort, Api
@@ -14,13 +13,11 @@ from db import db
 from blocklist import BLOCKLIST
 
 from resources.group import blp as GroupBlueprint
+from resources.invitation import blp as InvitationBlueprint
 from resources.user import blp as UserBlueprint
 from resources.expense import blp as ExpenseBlueprint
 from resources.settlement import blp as SettlementBlueprint
 from resources.history import blp as HistoryBlueprint
-
-# Global variable to track worker thread status
-worker_thread_started = False
 
 
 def create_app(db_url = None):
@@ -35,42 +32,15 @@ def create_app(db_url = None):
             connection.ping()
             app.queue = Queue(name="emails", connection=connection)
             app.redis_connection = connection
+            app.logger.info(f"✅ Redis connected successfully at {redis_url}")
         except Exception as e:
+            app.logger.error(f"❌ Redis connection failed: {e}")
             app.queue = None
             app.redis_connection = None
     else:
+        app.logger.warning("⚠️ REDIS_URL not set - emails will be sent synchronously")
         app.queue = None
         app.redis_connection = None
-    
-    # In-app RQ worker function - doesn't need a separate Bg worker
-    def run_worker():
-        """Background worker that runs in the same process"""
-        try:
-            worker = Worker(['emails'], connection=app.redis_connection)
-            worker.work(with_scheduler=True)
-        except Exception as e:
-            if hasattr(app, 'logger'):
-                app.logger.error(f"RQ worker failed: {e}")
-    
-    @app.before_request
-    def start_worker_thread():
-        global worker_thread_started
-        if not worker_thread_started and hasattr(app, 'redis_connection') and app.redis_connection:
-            try:
-                worker_thread = Thread(target=app.run_worker, daemon=True)
-                worker_thread.start()
-                worker_thread_started = True
-                app.logger.info("✅ Background worker thread started successfully")
-            except Exception as e:
-                app.logger.error(f"Failed to start background worker: {e}")
-        
-        # Remove this function after first execution to avoid repeated checks
-        if worker_thread_started or not (hasattr(app, 'redis_connection') and app.redis_connection):
-            app.before_request_funcs[None].remove(start_worker_thread)
-
-    
-    # Store worker function for later use
-    app.run_worker = run_worker
 
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "SplitFree REST API"
@@ -203,6 +173,7 @@ def create_app(db_url = None):
 
    
     api.register_blueprint(GroupBlueprint)
+    api.register_blueprint(InvitationBlueprint)
     api.register_blueprint(UserBlueprint)
     api.register_blueprint(ExpenseBlueprint)
     api.register_blueprint(SettlementBlueprint)

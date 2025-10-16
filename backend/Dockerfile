@@ -11,4 +11,4 @@ COPY . .
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV FLASK_ENV=production
 EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:create_app()"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--reload", "app:create_app()"]
