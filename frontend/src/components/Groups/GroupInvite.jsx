@@ -128,7 +128,7 @@ const GroupInvite = ({ group, onClose, onInviteSent }) => {
               {/* Group Code Section */}
               <div className="invite-section">
                 <h3>🔑 Share Group Code</h3>
-                <p>Anyone with this code can join the group {group.is_public ? '' : '(if group is public)'}</p>
+                <p>Anyone with this code can join the group</p>
                 
                 <div className="group-code-container">
                   <div className="group-code">{group.invite_code}</div>

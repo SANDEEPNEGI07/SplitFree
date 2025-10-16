@@ -535,10 +535,16 @@
 }
 
 @media (max-width: 480px) {
+  .group-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
   .stat-card {
     flex-direction: column;
     text-align: center;
     gap: 12px;
+    padding: 16px;
   }
 
   .activity-item,
@@ -999,12 +1005,12 @@
   }
 
   .group-stats {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
   }
 
   .stat-card {
-    padding: 20px;
+    padding: 16px;
   }
 
   .member-card {

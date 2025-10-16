@@ -3,12 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './Pages.css';
 import { useGroups } from '../hooks/useApi';
 import { getGroupExpenses, createExpense, deleteExpense } from '../services/expenses';
-import { addUserToGroup, removeUserFromGroup, getUserById } from '../services/groups';
+import { removeUserFromGroup, getUserById } from '../services/groups';
 import { getGroupBalances, createSettlement, getGroupSettlements } from '../services/settlements';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import Modal from '../components/UI/Modal';
 import Button from '../components/UI/Button';
-import UserSearch from '../components/UI/UserSearch';
 import GroupInvite from '../components/Groups/GroupInvite';
 
 const GroupDetails = () => {
@@ -20,7 +19,6 @@ const GroupDetails = () => {
   const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
@@ -38,10 +36,6 @@ const GroupDetails = () => {
   useEffect(() => {
     console.log('showAddExpenseModal changed to:', showAddExpenseModal);
   }, [showAddExpenseModal]);
-
-  useEffect(() => {
-    console.log('showAddMemberModal changed to:', showAddMemberModal);
-  }, [showAddMemberModal]);
 
   const currentGroup = groups.find(g => g.id === parseInt(groupId));
 
@@ -99,24 +93,6 @@ const GroupDetails = () => {
       console.error('Error creating expense:', error);
       console.error('Error response:', error.response?.data);
       alert('Error creating expense: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleAddMember = async (user) => {
-    console.log('Adding member:', user, 'to group:', groupId);
-    
-    try {
-      const result = await addUserToGroup(groupId, user.id);
-      console.log('Add member result:', result);
-      
-      setShowAddMemberModal(false);
-      refetch(); // Refresh group data to get updated members
-      
-      alert(`${user.username} added to group successfully!`);
-    } catch (error) {
-      console.error('Error adding member:', error);
-      console.error('Error response:', error.response?.data);
-      alert('Error adding member: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -224,15 +200,6 @@ const GroupDetails = () => {
             variant="outline"
           >
             Invite Members
-          </Button>
-          <Button 
-            onClick={() => {
-              console.log('Add Member button clicked!');
-              setShowAddMemberModal(true);
-            }}
-            variant="secondary"
-          >
-            Add Member
           </Button>
           <Button onClick={() => {
             console.log('Add Expense button clicked!');
@@ -447,22 +414,6 @@ const GroupDetails = () => {
             <Button type="submit">Add Expense</Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Add Member Modal */}
-      <Modal 
-        isOpen={showAddMemberModal} 
-        onClose={() => {
-          console.log('Closing Add Member Modal');
-          setShowAddMemberModal(false);
-        }}
-        title="Add Member to Group"
-      >
-        {console.log('Rendering Add Member Modal, isOpen:', showAddMemberModal)}
-        <UserSearch 
-          onUserSelect={handleAddMember}
-          excludeUserIds={currentGroup.users?.map(u => u.id) || []}
-        />
       </Modal>
 
       {/* Settlement Modal */}
