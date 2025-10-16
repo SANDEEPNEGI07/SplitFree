@@ -34,23 +34,19 @@ class UserRegister(MethodView):
         db.session.add(user)
         db.session.commit()
 
+        # Queue welcome email
         try:
-            current_app.logger.info(f"🚀 Starting email process for {user.email}")
-            
-            # Force direct email sending for now (Redis threading issues in Docker)
-            current_app.logger.info(f"📧 Using direct email sending for {user.email}")
-            email_result = send_user_registration_email(user.email, user.username)
-            current_app.logger.info(f"📧 Direct email result for {user.email}: {email_result}")
-            
-            if email_result.get("status") == "error":
-                current_app.logger.error(f"❌ Email sending failed: {email_result.get('message')}")
+            if hasattr(current_app, 'queue') and current_app.queue:
+                job = current_app.queue.enqueue(
+                    send_user_registration_email,
+                    user.email,
+                    user.username
+                )
+                current_app.logger.info(f"Email job queued: {job.id}")
             else:
-                current_app.logger.info(f"✅ Email sent successfully to {user.email}")
-                    
+                current_app.logger.warning("Redis queue not available, skipping welcome email")
         except Exception as e:
-            current_app.logger.error(f"💥 Failed to send welcome email to {user.email}: {str(e)}")
-            import traceback
-            current_app.logger.error(f"💥 Full traceback: {traceback.format_exc()}")
+            current_app.logger.error(f"Failed to queue welcome email: {str(e)}")
 
         return {"message":"User created successfully"}, 201
 
