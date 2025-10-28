@@ -24,7 +24,9 @@ const GroupDetails = () => {
   const [expenseForm, setExpenseForm] = useState({
     amount: '',
     description: '',
-    paid_by: ''
+    paid_by: '',
+    split_type: 'equal',
+    splits: []
   });
   const [settlementForm, setSettlementForm] = useState({
     paid_by: '',
@@ -56,6 +58,10 @@ const GroupDetails = () => {
       setExpenses(expensesData);
       setBalances(balancesData);
       setSettlements(settlementsData);
+      
+      console.log('Loaded expenses:', expensesData);
+      console.log('Loaded balances:', balancesData);
+      console.log('Loaded settlements:', settlementsData);
     } catch (error) {
       console.error('Error loading group data:', error);
     } finally {
@@ -73,10 +79,16 @@ const GroupDetails = () => {
     });
     
     try {
+      // For unequal/percentage splits, assume the current user paid
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      const paid_by = expenseForm.split_type === 'equal' 
+        ? parseInt(expenseForm.paid_by)
+        : currentUser?.id || parseInt(expenseForm.paid_by);
+      
       const expenseData = {
         ...expenseForm,
         amount: parseFloat(expenseForm.amount),
-        paid_by: parseInt(expenseForm.paid_by)
+        paid_by: paid_by
       };
       
       console.log('Sending expense data to API:', expenseData);
@@ -85,8 +97,18 @@ const GroupDetails = () => {
       console.log('Expense creation result:', result);
       
       setShowAddExpenseModal(false);
-      setExpenseForm({ amount: '', description: '', paid_by: '' });
-      loadGroupData(); // Refresh expenses
+      setExpenseForm({ 
+        amount: '', 
+        description: '', 
+        paid_by: '', 
+        split_type: 'equal', 
+        splits: [] 
+      });
+      
+      // Wait a moment for the database to be updated, then refresh
+      setTimeout(() => {
+        loadGroupData();
+      }, 500);
       
       alert('Expense created successfully!');
     } catch (error) {
@@ -200,6 +222,13 @@ const GroupDetails = () => {
             variant="outline"
           >
             Invite Members
+          </Button>
+          <Button 
+            onClick={() => loadGroupData()}
+            variant="outline"
+            title="Refresh data"
+          >
+            Refresh
           </Button>
           <Button onClick={() => {
             console.log('Add Expense button clicked!');
@@ -388,21 +417,110 @@ const GroupDetails = () => {
               placeholder="0.00"
             />
           </div>
+
+          {/* Split Type Selection */}
           <div className="form-group">
-            <label>Paid by</label>
+            <label>Split Type</label>
             <select
-              value={expenseForm.paid_by}
-              onChange={(e) => setExpenseForm({...expenseForm, paid_by: e.target.value})}
-              required
+              value={expenseForm.split_type}
+              onChange={(e) => {
+                const splitType = e.target.value;
+                setExpenseForm({
+                  ...expenseForm, 
+                  split_type: splitType,
+                  splits: [] // Reset splits when type changes
+                });
+              }}
             >
-              <option value="">Select who paid</option>
-              {currentGroup.users?.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.username}
-                </option>
-              ))}
+              <option value="equal">Equally</option>
+              <option value="unequal">Unequally</option>
+              <option value="percentage">By Percentage</option>
             </select>
           </div>
+
+          {/* Paid by field - only show for equal splits */}
+          {expenseForm.split_type === 'equal' && (
+            <div className="form-group">
+              <label>Paid by</label>
+              <select
+                value={expenseForm.paid_by}
+                onChange={(e) => setExpenseForm({...expenseForm, paid_by: e.target.value})}
+                required
+              >
+                <option value="">Select who paid</option>
+                {currentGroup.users?.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Custom Split Inputs for Unequal */}
+          {expenseForm.split_type === 'unequal' && (
+            <div className="form-group">
+              <label>Custom Amounts</label>
+              <div className="split-inputs">
+                {currentGroup.users?.map(user => (
+                  <div key={user.id} className="split-input-row">
+                    <span className="split-user-name">{user.username}:</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={expenseForm.splits.find(s => s.user_id === user.id)?.amount || ''}
+                      onChange={(e) => {
+                        const amount = e.target.value;
+                        const newSplits = expenseForm.splits.filter(s => s.user_id !== user.id);
+                        if (amount) {
+                          newSplits.push({ user_id: user.id, amount: parseFloat(amount) });
+                        }
+                        setExpenseForm({...expenseForm, splits: newSplits});
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Split Inputs for Percentage */}
+          {expenseForm.split_type === 'percentage' && (
+            <div className="form-group">
+              <label>Percentages (must total 100%)</label>
+              <div className="split-inputs">
+                {currentGroup.users?.map(user => (
+                  <div key={user.id} className="split-input-row">
+                    <span className="split-user-name">{user.username}:</span>
+                    <div className="percentage-input">
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        min="0"
+                        max="100"
+                        value={expenseForm.splits.find(s => s.user_id === user.id)?.percentage || ''}
+                        onChange={(e) => {
+                          const percentage = e.target.value;
+                          const newSplits = expenseForm.splits.filter(s => s.user_id !== user.id);
+                          if (percentage) {
+                            newSplits.push({ user_id: user.id, percentage: parseFloat(percentage) });
+                          }
+                          setExpenseForm({...expenseForm, splits: newSplits});
+                        }}
+                      />
+                      <span>%</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="percentage-total">
+                  Total: {expenseForm.splits.reduce((sum, split) => sum + (split.percentage || 0), 0).toFixed(1)}%
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="modal-actions">
             <Button 
               type="button" 

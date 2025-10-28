@@ -1323,3 +1323,154 @@
   color: #6c757d;
   font-style: italic;
 }
+/* Split Details Styling */
+.split-details {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.split-label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.split-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.split-row:last-of-type {
+  border-bottom: none;
+}
+
+.split-user {
+  font-weight: 500;
+  color: #495057;
+  flex: 1;
+}
+
+.split-input {
+  width: 120px;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: right;
+}
+
+.split-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.percentage-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.percentage-symbol {
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.split-total {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+  text-align: right;
+  font-size: 15px;
+}
+
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-select:hover {
+  border-color: #007bff;
+}
+
+/* Split Input Styles */
+.split-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.split-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.split-user-name {
+  font-weight: 500;
+  color: #333;
+  min-width: 120px;
+  text-align: left;
+}
+
+.split-input-row input {
+  flex: 1;
+  max-width: 120px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: right;
+}
+
+.split-input-row input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.percentage-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.percentage-input span {
+  font-weight: 500;
+  color: #666;
+}
+
+.percentage-total {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 500;
+  color: #333;
+  border: 1px solid #e9ecef;
+}

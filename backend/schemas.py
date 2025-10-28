@@ -83,6 +83,12 @@ class GroupCodeInfoSchema(Schema):
     is_public = fields.Bool(dump_only=True)
 
 # Expense realted Schema
+class ExpenseSplitInputSchema(Schema):
+    """Schema for custom split input (unequal or percentage)"""
+    user_id = fields.Int(required=True)
+    amount = fields.Float(required=False)  # For unequal splits
+    percentage = fields.Float(required=False)  # For percentage splits
+
 class ExpenseSplitSchema(Schema):
     id = fields.Method("get_index", dump_only=True)
     split_id = fields.Int(attribute="id", dump_only=True)
@@ -103,15 +109,18 @@ class ExpenseCreateSchema(Schema):
     description = fields.Str(required=True)
     paid_by = fields.Int(required=True)
     date = fields.Date(load_default=lambda: dt.now().date())
+    split_type = fields.Str(load_default="equal")
+    splits = fields.List(fields.Nested(ExpenseSplitInputSchema), required=False)  # For custom splits
 
 class ExpenseSchema(ExpenseCreateSchema):
     id = fields.Int(dump_only=True)
     group_id = fields.Int(required=True)
     splits = fields.List(fields.Nested(ExpenseSplitSchema), dump_only=True)
+    split_type = fields.Str(dump_only=True)
 
     class Meta:
         ordered = True
-        fields = ("id", "amount", "description", "paid_by", "date", "group_id", "splits")
+        fields = ("id", "amount", "description", "paid_by", "date", "group_id", "split_type", "splits")
 
 # Settlement realted schemas
 class SettlementCreateSchema(Schema):

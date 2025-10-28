@@ -18,7 +18,7 @@ class GroupExpense(MethodView):
     @blp.arguments(ExpenseCreateSchema)
     @blp.response(201, ExpenseSchema)
     def post(self, expense_data, group_id):
-        """Create a new expense in a group and split it equally among all members - only if user is a member."""
+        """Create a new expense in a group."""
         
         # Get the current logged-in user ID
         current_user_id = int(get_jwt_identity())
@@ -50,21 +50,77 @@ class GroupExpense(MethodView):
         if existing_expense:
             abort(409, message="A similar expense was already created today. If this is intentional, please modify the description slightly.")
 
-        expense = ExpenseModel(**expense_data, group_id=group_id)
+        split_type = expense_data.get("split_type", "equal")
+        custom_splits = expense_data.get("splits", [])
+
+        expense = ExpenseModel(
+            description=expense_data["description"],
+            amount=expense_data["amount"],
+            paid_by=expense_data["paid_by"],
+            date=current_date,
+            group_id=group_id,
+            split_type=split_type
+        )
 
         try:
             db.session.add(expense)
             db.session.flush()
 
-            share = expense.amount / len(users)
-
-            for user in users:
-                split = ExpenseSplitModel(
-                    expense_id = expense.id,
-                    user_id = user.id,
-                    amount = share
-                )
-                db.session.add(split)
+            # Handle different split types
+            if split_type == "equal":
+                # Equal split among all members
+                share = expense.amount / len(users)
+                for user in users:
+                    split = ExpenseSplitModel(
+                        expense_id=expense.id,
+                        user_id=user.id,
+                        amount=share
+                    )
+                    db.session.add(split)
+            
+            elif split_type == "unequal":
+                # Unequal split with custom amounts
+                if not custom_splits:
+                    abort(400, message="Custom splits required for unequal split type")
+                
+                total_split = sum(s.get("amount", 0) for s in custom_splits)
+                if abs(float(total_split) - float(expense.amount)) > 0.01:
+                    abort(400, message=f"Split amounts must sum to total expense amount. Got {total_split}, expected {expense.amount}")
+                
+                for split_data in custom_splits:
+                    if split_data["user_id"] not in member_ids:
+                        abort(400, message=f"User {split_data['user_id']} is not a member of this group")
+                    
+                    split = ExpenseSplitModel(
+                        expense_id=expense.id,
+                        user_id=split_data["user_id"],
+                        amount=split_data["amount"]
+                    )
+                    db.session.add(split)
+            
+            elif split_type == "percentage":
+                # Percentage-based split
+                if not custom_splits:
+                    abort(400, message="Custom splits required for percentage split type")
+                
+                total_percentage = sum(s.get("percentage", 0) for s in custom_splits)
+                if abs(total_percentage - 100) > 0.01:
+                    abort(400, message=f"Percentages must sum to 100. Got {total_percentage}")
+                
+                for split_data in custom_splits:
+                    if split_data["user_id"] not in member_ids:
+                        abort(400, message=f"User {split_data['user_id']} is not a member of this group")
+                    
+                    amount = (split_data["percentage"] / 100) * float(expense.amount)
+                    split = ExpenseSplitModel(
+                        expense_id=expense.id,
+                        user_id=split_data["user_id"],
+                        amount=amount
+                    )
+                    db.session.add(split)
+            
+            else:
+                abort(400, message=f"Invalid split type: {split_type}. Must be 'equal', 'unequal', or 'percentage'")
 
             db.session.commit()
         
@@ -72,9 +128,9 @@ class GroupExpense(MethodView):
             db.session.rollback()
             abort(409, message="Expense already created")
 
-        except SQLAlchemyError:
+        except SQLAlchemyError as e:
             db.session.rollback()
-            abort(500, message="An error occurred while creating expense")
+            abort(500, message=f"An error occurred while creating expense: {str(e)}")
 
         return expense
     
